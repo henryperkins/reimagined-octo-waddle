@@ -10,7 +10,7 @@ export interface AIChatSettings {
 
 export const DEFAULT_SETTINGS: AIChatSettings = {
 	apiKey: '',
-	modelName: 'gpt-4o',
+	modelName: 'gpt-4',
 	temperature: 0.7,
 	maxTokens: 100,
 	topP: 0.9
