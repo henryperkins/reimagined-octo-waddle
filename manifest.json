@@ -1,0 +1,10 @@
+{
+  "id": "ai-chat-plugin",
+  "name": "AI Chat Plugin",
+  "version": "1.0.0",
+  "minAppVersion": "0.12.0",
+  "description": "A plugin that allows users to chat with an AI about their notes using Azure OpenAI.",
+  "author": "Your Name",
+  "authorUrl": "https://yourwebsite.com",
+  "isDesktopOnly": false
+}
