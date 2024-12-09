@@ -46,6 +46,7 @@ export class AIChatSettingsTab extends PluginSettingTab {
 	constructor(app: App, plugin: any) {
 		super(app, plugin);
 		this.plugin = plugin;
+		hello();
 	}
 
 	display(): void {

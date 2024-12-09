@@ -1,4 +1,5 @@
 import { Plugin, App, ItemView, WorkspaceLeaf, TFile, normalizePath } from 'obsidian';
+import { hello } from './hello';
 import axios from 'axios';
 import { AIChatSettingsTab, AIChatSettings, DEFAULT_SETTINGS } from './settings';
 import { AIChatView } from './ui';
