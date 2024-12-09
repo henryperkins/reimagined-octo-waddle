@@ -52,16 +52,36 @@ export default class AIChatPlugin extends Plugin {
 
 	async retrieveRelevantNotes(query: string): Promise<string[]> {
 		const files = this.app.vault.getMarkdownFiles();
-		const searchResults: string[] = [];
+		const searchResults: { file: TFile, content: string, score: number }[] = [];
+
+		const currentFile = this.app.workspace.getActiveFile();
+		if (currentFile) {
+			const currentContent = await this.app.vault.read(currentFile);
+			searchResults.push({ file: currentFile, content: currentContent, score: 1.0 });
+		}
 
 		for (const file of files) {
+			if (file === currentFile) continue;
+
 			const content = await this.app.vault.read(file);
-			if (content.includes(query)) {
-				searchResults.push(content);
+			const titleScore = file.basename.includes(query) ? 0.5 : 0;
+			const tagScore = this.getTagScore(file, query);
+			const contentScore = content.includes(query) ? 0.3 : 0;
+			const totalScore = titleScore + tagScore + contentScore;
+
+			if (totalScore > 0) {
+				searchResults.push({ file, content, score: totalScore });
 			}
 		}
 
-		return searchResults;
+		searchResults.sort((a, b) => b.score - a.score);
+
+		return searchResults.map(result => result.content);
+	}
+
+	getTagScore(file: TFile, query: string): number {
+		const tags = this.app.metadataCache.getFileCache(file)?.tags || [];
+		return tags.some(tag => tag.tag.includes(query)) ? 0.2 : 0;
 	}
 
 	async queryOpenAI(context: string, query: string): Promise<string> {
