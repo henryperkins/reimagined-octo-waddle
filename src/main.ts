@@ -155,11 +155,19 @@ async saveChatHistory(chatHistory: string[]) {
 	}
 
 	// Methods to delete individual messages or clear the entire chat history
-	async deleteMessageFromHistory(message: string) {
-		let chatHistory = await this.loadChatHistory();
-		chatHistory = chatHistory.filter(msg => msg !== message);
-		await this.saveChatHistory(chatHistory);
-	}
+async deleteMessageFromHistory(message: string) {
+    if (!message || message.trim().length === 0) {
+        return;
+    }
+    try {
+        let chatHistory = await this.loadChatHistory();
+        chatHistory = chatHistory.filter(msg => msg !== message);
+        await this.saveChatHistory(chatHistory);
+    } catch (error) {
+        console.error('Failed to delete message from history:', error);
+        throw new Error('Failed to delete message from history');
+    }
+}
 
 	async clearChatHistory() {
 		await this.app.vault.modify(await this.app.vault.getAbstractFileByPath('chat-history.md') as TFile, '');
