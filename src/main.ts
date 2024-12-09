@@ -130,9 +130,16 @@ export default class AIChatPlugin extends Plugin {
 
 	// Methods to save, load, and search chat histories
 	async saveChatHistory(chatHistory: string[]) {
-		const file = await this.app.vault.create('chat-history.md', chatHistory.join('\n'));
-		return file;
-	}
+async saveChatHistory(chatHistory: string[]) {
+    const filePath = 'chat-history.md';
+    let file = this.app.vault.getAbstractFileByPath(filePath);
+    if (file instanceof TFile) {
+        await this.app.vault.modify(file, chatHistory.join('\n'));
+    } else {
+        file = await this.app.vault.create(filePath, chatHistory.join('\n'));
+    }
+    return file;
+}
 
 	async loadChatHistory(): Promise<string[]> {
 		const file = this.app.vault.getAbstractFileByPath('chat-history.md');
