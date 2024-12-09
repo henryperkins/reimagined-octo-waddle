@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, ButtonComponent, TextComponent, TextAreaComponent, Setting, debounce } from 'obsidian';
+import { ItemView, WorkspaceLeaf, ButtonComponent, TextAreaComponent, Setting, debounce } from 'obsidian';
 import AIChatPlugin from './main';
 
 export const VIEW_TYPE_AI_CHAT = 'AI_CHAT_VIEW';

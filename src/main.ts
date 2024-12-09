@@ -180,7 +180,6 @@ export default class AIChatPlugin extends Plugin {
 		// For example, removing special characters, normalizing whitespace, etc.
 		return text.replace(/[\r\n]+/g, ' ').trim();
 	}
-}
 	async makeOpenAIRequest(context: string, query: string): Promise<string> {
 		const apiKey = this.settings.apiKey.trim();
 		if (!apiKey) {
