@@ -6,6 +6,17 @@ export interface AIChatSettings {
 	temperature: number;
 	maxTokens: number;
 	topP: number;
+	chatFontSize: string;
+	chatColorScheme: string;
+	chatLayout: string;
+	enableChatHistory: boolean;
+	defaultPrompt: string;
+	contextWindowSize: number;
+	saveChatHistory: boolean;
+	loadChatHistory: boolean;
+	searchChatHistory: boolean;
+	deleteMessageFromHistory: boolean;
+	clearChatHistory: boolean;
 }
 
 export const DEFAULT_SETTINGS: AIChatSettings = {
@@ -13,7 +24,18 @@ export const DEFAULT_SETTINGS: AIChatSettings = {
 	modelName: 'gpt-4',
 	temperature: 0.7,
 	maxTokens: 100,
-	topP: 0.9
+	topP: 0.9,
+	chatFontSize: '14px',
+	chatColorScheme: 'light',
+	chatLayout: 'vertical',
+	enableChatHistory: true,
+	defaultPrompt: '',
+	contextWindowSize: 2048,
+	saveChatHistory: true,
+	loadChatHistory: true,
+	searchChatHistory: true,
+	deleteMessageFromHistory: true,
+	clearChatHistory: true
 }
 
 export class AIChatSettingsTab extends PluginSettingTab {
@@ -89,6 +111,129 @@ export class AIChatSettingsTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.topP)
 				.onChange(async (value) => {
 					this.plugin.settings.topP = value;
+					await this.plugin.saveSettings();
+					}));
+
+		new Setting(containerEl)
+			.setName('Chat Font Size')
+			.setDesc('Set the font size for the chat interface')
+			.addText(text => text
+				.setPlaceholder('Enter font size (e.g., 14px)')
+				.setValue(this.plugin.settings.chatFontSize)
+				.onChange(async (value) => {
+					this.plugin.settings.chatFontSize = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Chat Color Scheme')
+			.setDesc('Set the color scheme for the chat interface')
+			.addDropdown(dropdown => dropdown
+				.addOption('light', 'Light')
+				.addOption('dark', 'Dark')
+				.setValue(this.plugin.settings.chatColorScheme)
+				.onChange(async (value) => {
+					this.plugin.settings.chatColorScheme = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Chat Layout')
+			.setDesc('Set the layout for the chat interface')
+			.addDropdown(dropdown => dropdown
+				.addOption('vertical', 'Vertical')
+				.addOption('horizontal', 'Horizontal')
+				.setValue(this.plugin.settings.chatLayout)
+				.onChange(async (value) => {
+					this.plugin.settings.chatLayout = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Enable Chat History')
+			.setDesc('Enable or disable chat history')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableChatHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.enableChatHistory = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Default Prompt')
+			.setDesc('Set the default prompt for the chat interface')
+			.addText(text => text
+				.setPlaceholder('Enter default prompt')
+				.setValue(this.plugin.settings.defaultPrompt)
+				.onChange(async (value) => {
+					this.plugin.settings.defaultPrompt = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Context Window Size')
+			.setDesc('Set the context window size for the AI model')
+			.addText(text => text
+				.setPlaceholder('Enter context window size')
+				.setValue(this.plugin.settings.contextWindowSize.toString())
+				.onChange(async (value) => {
+					const intValue = parseInt(value);
+					if (Number.isNaN(intValue) || intValue <= 0) {
+						// Reset to default if invalid
+						text.setValue(this.plugin.settings.contextWindowSize.toString());
+						return;
+					}
+					this.plugin.settings.contextWindowSize = intValue;
+					await this.plugin.saveSettings();
+					}));
+
+		new Setting(containerEl)
+			.setName('Save Chat History')
+			.setDesc('Enable or disable saving chat history')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.saveChatHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.saveChatHistory = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Load Chat History')
+			.setDesc('Enable or disable loading chat history')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.loadChatHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.loadChatHistory = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Search Chat History')
+			.setDesc('Enable or disable searching chat history')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.searchChatHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.searchChatHistory = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Delete Message From History')
+			.setDesc('Enable or disable deleting individual messages from chat history')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.deleteMessageFromHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.deleteMessageFromHistory = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Clear Chat History')
+			.setDesc('Enable or disable clearing the entire chat history')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.clearChatHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.clearChatHistory = value;
 					await this.plugin.saveSettings();
 				}));
 	}

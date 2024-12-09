@@ -127,4 +127,35 @@ export default class AIChatPlugin extends Plugin {
 			this.app.workspace.getLeavesOfType('AI_CHAT_VIEW')[0]
 		);
 	}
+
+	// Methods to save, load, and search chat histories
+	async saveChatHistory(chatHistory: string[]) {
+		const file = await this.app.vault.create('chat-history.md', chatHistory.join('\n'));
+		return file;
+	}
+
+	async loadChatHistory(): Promise<string[]> {
+		const file = this.app.vault.getAbstractFileByPath('chat-history.md');
+		if (file instanceof TFile) {
+			const content = await this.app.vault.read(file);
+			return content.split('\n');
+		}
+		return [];
+	}
+
+	async searchChatHistory(query: string): Promise<string[]> {
+		const chatHistory = await this.loadChatHistory();
+		return chatHistory.filter(message => message.includes(query));
+	}
+
+	// Methods to delete individual messages or clear the entire chat history
+	async deleteMessageFromHistory(message: string) {
+		let chatHistory = await this.loadChatHistory();
+		chatHistory = chatHistory.filter(msg => msg !== message);
+		await this.saveChatHistory(chatHistory);
+	}
+
+	async clearChatHistory() {
+		await this.app.vault.modify(await this.app.vault.getAbstractFileByPath('chat-history.md') as TFile, '');
+	}
 }
