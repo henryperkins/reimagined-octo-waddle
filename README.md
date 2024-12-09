@@ -84,3 +84,70 @@
 *   **User Experience (UX):** Design the plugin with a focus on user experience. Make it easy to use, intuitive, and helpful.
 
 These instructions should provide a solid foundation for an AI to build the desired Obsidian plugin. Remember to iterate and refine the plugin based on user feedback and testing results.
+
+---
+Thank you for providing the full endpoint URL. This is helpful. Based on the URL you provided, here's a refined set of resources and instructions for the AI, incorporating the new information:
+
+**Refined Resources and Instructions for the AI:**
+
+**1. Azure OpenAI Specifics:**
+
+*   **API Endpoint:** `https://openai-hp.openai.azure.com/openai/deployments/o1-preview/chat/completions?api-version=2024-08-01-preview`
+    *   **Note to AI:**  This is the full URL for the chat completions endpoint. Use this directly for making API requests.
+*   **Deployment Name:** `o1-preview`
+    *   **Note to AI:**  This is the deployment name, use it when specifying the model in API requests. However, double check if this is the model name or the deployment name. If it is the model name, then the deployment name is missing. Ask the user if you are unsure.
+*   **API Key:**  The user will provide this through the plugin settings.
+    *   **Instruction to AI:** Create a plugin settings tab where the user can securely enter their Azure OpenAI API key. Use Obsidian's built-in encryption methods to store the API key. Never hardcode the API key.
+*   **API Version:**  `2024-08-01-preview`
+    *   **Instruction to AI:**  Use this API version in all requests to the Azure OpenAI service.
+*   **Model Information:**  The endpoint indicates a chat completions model.
+    *   **Instruction to AI:**  Clarify with the user what specific model is deployed under `o1-preview` (e.g., `gpt-35-turbo`, `gpt-4`). If the user does not specify, default to `gpt-35-turbo` if it is available, but inform the user in the documentation or settings that they can change it if necessary. Determine the context window size for the chosen model and use this to manage the context provided in prompts.
+
+**2. Obsidian API and Plugin Development:** (Same as before)
+
+*   **Link to Obsidian API Documentation:**  [https://docs.obsidian.md/Plugins/Getting+started](https://docs.obsidian.md/Plugins/Getting+started)
+*   **Link to Obsidian Sample Plugin:** [https://github.com/obsidianmd/obsidian-sample-plugin](https://github.com/obsidianmd/obsidian-sample-plugin)
+*   **Guidance on UI Development within Obsidian:**  Create a sidebar pane for the chat interface.
+*   **Information on Obsidian's Settings API:**  Use this to allow the user to input and securely store the API key, and optionally, the model name if it's not fixed as `o1-preview`.
+
+**3. Note Retrieval and Processing:** (Same as before)
+
+*   **Guidance on Accessing Notes:** Use the Obsidian API to access note content.
+*   **Instructions on Search Strategies:**  Use Obsidian's built-in search API to find relevant notes based on the user's query.
+*   **Context Management Strategy:**  Provide up to the maximum token limit context from notes to the AI, using a chunking strategy if necessary to stay within the limit. Prioritize information from the currently active note.
+
+**4. Azure OpenAI API Interaction:**
+
+*   **Code Example (using the provided endpoint and assuming gpt-35-turbo):**
+    ```typescript
+    import {OpenAI} from "openai";
+
+    async function call_openai(query, context, apiKey){
+      const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: "https://openai-hp.openai.azure.com/openai/deployments",
+        defaultQuery: { "api-version": "2024-08-01-preview" },
+        defaultHeaders: {"api-key": apiKey}
+      });
+    
+      const completion = await openai.chat.completions.create({
+        messages: [{ role: "system", content: context },{ role: "user", content: query }],
+        model: "o1-preview",
+      });
+    
+      return completion.choices[0];
+    }
+    ```
+    *   **Instruction to AI:** Use this as a starting point for interacting with the Azure OpenAI API. Adapt as necessary based on the chosen model and any additional parameters. Ensure the API key is dynamically retrieved from the plugin settings. Handle potential errors from the API, such as rate limiting or authentication failures.
+*   **Error Handling:**  Implement robust error handling. If the API returns an error, display a user-friendly message in the chat interface.
+
+**5. Prompt Engineering Guidance:** (Same as before)
+
+*   **System Prompt Instructions:**
+    > You are an AI assistant designed to help users understand and analyze their notes in Obsidian. Answer the user's questions based on the provided notes from their vault. Be concise and informative.
+*   **Few-Shot Examples (Optional):**  Include a few examples if specific response formats are desired.
+
+**6. TypeScript and Development Environment:** (Same as before)
+
+*   Assume knowledge of TypeScript and Node.js. Use standard libraries for Obsidian plugin development and Azure OpenAI interaction.
+
