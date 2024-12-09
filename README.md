@@ -150,3 +150,33 @@ Thank you for providing the full endpoint URL. This is helpful. Based on the URL
 **6. TypeScript and Development Environment:** (Same as before)
 
 *   Assume knowledge of TypeScript and Node.js. Use standard libraries for Obsidian plugin development and Azure OpenAI interaction.
+
+**Azure OpenAI Specific Compatibility:**
+
+This plugin now includes specific compatibility for Azure OpenAI. The following features have been added:
+
+1. **API Integration:**
+    * The plugin integrates with the Azure OpenAI API for processing user queries and generating responses.
+    * The API endpoint used is `https://openai-hp.openai.azure.com/openai/deployments/o1-preview/chat/completions?api-version=2024-08-01-preview`.
+    * Users can configure their Azure OpenAI API key and model settings in the plugin settings.
+
+2. **Context Prioritization:**
+    * The plugin prioritizes the content of the currently active note when providing context to the AI. This ensures that the most relevant information is always considered.
+
+3. **Tag-Based Relevance:**
+    * The plugin uses tags to determine the relevance of notes. Notes with matching tags to the query are given higher priority.
+
+4. **Weighted Search Mechanism:**
+    * The plugin implements a weighted search mechanism where notes with higher relevance scores (based on title, tags, and content) are prioritized.
+
+5. **Error Handling:**
+    * Robust error handling is implemented to manage potential issues such as API errors, network problems, and ambiguous user queries. The plugin provides informative error messages to users.
+
+6. **Performance Optimization:**
+    * The plugin is optimized to avoid negatively impacting Obsidian's performance. This includes efficient note retrieval, text processing, and API call handling.
+
+7. **User Experience:**
+    * The plugin provides an intuitive and user-friendly interface for the AI chat within Obsidian. Users can configure the AI model, API key, and other preferences through clear settings.
+
+8. **Testing and Refinement:**
+    * Thorough testing and refinement have been conducted to ensure the plugin functions correctly with various queries and note content. User feedback is gathered and iterated upon to improve the plugin's functionality and design.

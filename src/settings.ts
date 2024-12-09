@@ -79,6 +79,7 @@ export class AIChatSettingsTab extends PluginSettingTab {
 					}
 					this.plugin.settings.maxTokens = intValue;
 					await this.plugin.saveSettings();
+				}));
 
 		new Setting(containerEl)
 			.setName('Top-P')
