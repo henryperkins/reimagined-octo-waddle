@@ -74,6 +74,10 @@ export class AIChatSettingsTab extends PluginSettingTab {
 				.setPlaceholder('Enter the model name')
 				.setValue(this.plugin.settings.modelName)
 				.onChange(async (value) => {
+					if (value.trim() === '') {
+						text.setValue(this.plugin.settings.modelName);
+						return;
+					}
 					this.plugin.settings.modelName = value;
 					await this.plugin.saveSettings();
 					}));
