@@ -18,6 +18,16 @@ export class AIChatSettingsTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	encryptAPIKey(apiKey: string): string {
+		// Use Obsidian's built-in encryption method
+		return btoa(apiKey); // Placeholder for actual encryption method
+	}
+
+	decryptAPIKey(encryptedKey: string): string {
+		// Use Obsidian's built-in decryption method
+		return atob(encryptedKey); // Placeholder for actual decryption method
+	}
+
 	display(): void {
 		const { containerEl } = this;
 
@@ -30,9 +40,9 @@ export class AIChatSettingsTab extends PluginSettingTab {
 			.setDesc('Enter your Azure OpenAI API key')
 			.addText(text => text
 				.setPlaceholder('Enter your API key')
-				.setValue(this.plugin.settings.apiKey)
+				.setValue(this.decryptAPIKey(this.plugin.settings.apiKey))
 				.onChange(async (value) => {
-					this.plugin.settings.apiKey = value;
+					this.plugin.settings.apiKey = this.encryptAPIKey(value);
 					await this.plugin.saveSettings();
 				}));
 

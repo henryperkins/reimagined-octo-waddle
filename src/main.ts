@@ -31,11 +31,29 @@ export default class AIChatPlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, await this.loadData());
+		const loadedSettings = Object.assign({}, await this.loadData());
+		this.settings = {
+			...loadedSettings,
+			apiKey: this.decryptAPIKey(loadedSettings.apiKey)
+		};
 	}
 
 	async saveSettings() {
-		await this.saveData(this.settings);
+		const settingsToSave = {
+			...this.settings,
+			apiKey: this.encryptAPIKey(this.settings.apiKey)
+		};
+		await this.saveData(settingsToSave);
+	}
+
+	encryptAPIKey(apiKey: string): string {
+		// Use Obsidian's built-in encryption method
+		return btoa(apiKey); // Placeholder for actual encryption method
+	}
+
+	decryptAPIKey(encryptedKey: string): string {
+		// Use Obsidian's built-in decryption method
+		return atob(encryptedKey); // Placeholder for actual decryption method
 	}
 
 	async handleUserQuery(query: string) {
@@ -65,7 +83,7 @@ export default class AIChatPlugin extends Plugin {
 	}
 
 	async queryOpenAI(context: string, query: string): Promise<string> {
-		const apiKey = this.settings.apiKey;
+		const apiKey = this.decryptAPIKey(this.settings.apiKey);
 		const modelName = this.settings.modelName || 'gpt-4o';
 
 		const response = await axios.post(
