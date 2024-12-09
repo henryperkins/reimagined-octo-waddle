@@ -66,28 +66,35 @@ export class AIChatView extends ItemView {
 		const clearButton = container.createEl('button', { text: 'Clear Chat History', cls: 'chat-clear-button' });
 
 		saveButton.addEventListener('click', async () => {
-			await this.plugin.saveChatHistory(this.chatHistory);
+			if (this.plugin.settings.enableChatHistory) {
+				await this.plugin.saveChatHistory(this.chatHistory);
+			}
 		});
 
 		loadButton.addEventListener('click', async () => {
-			this.chatHistory = await this.plugin.loadChatHistory();
-			this.updateChatHistory(chatBox);
+			if (this.plugin.settings.enableChatHistory) {
+				this.chatHistory = await this.plugin.loadChatHistory();
+				this.updateChatHistory(chatBox);
+			}
 		});
 
 		searchButton.addEventListener('click', async () => {
-			const query = searchInput.value;
-			if (query.trim() === '') return;
+			if (this.plugin.settings.enableChatHistory) {
+				const query = searchInput.value;
+				if (query.trim() === '') return;
 
-			const searchResults = await this.plugin.searchChatHistory(query);
-			this.displaySearchResults(chatBox, searchResults);
+				const searchResults = await this.plugin.searchChatHistory(query);
+				this.displaySearchResults(chatBox, searchResults);
+			}
 		});
 
 		clearButton.addEventListener('click', async () => {
-			await this.plugin.clearChatHistory();
-			this.chatHistory = [];
-			this.updateChatHistory(chatBox);
+			if (this.plugin.settings.enableChatHistory) {
+				await this.plugin.clearChatHistory();
+				this.chatHistory = [];
+				this.updateChatHistory(chatBox);
+			}
 		});
-
 		sendButton.addEventListener('click', async () => {
 			const query = inputBox.value;
 			if (query.trim() === '') return;
