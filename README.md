@@ -180,3 +180,30 @@ This plugin now includes specific compatibility for Azure OpenAI. The following 
 
 8. **Testing and Refinement:**
     * Thorough testing and refinement have been conducted to ensure the plugin functions correctly with various queries and note content. User feedback is gathered and iterated upon to improve the plugin's functionality and design.
+
+**Instructions for Configuring the Chat Interface Appearance and Behavior:**
+
+1. **Accessing Settings:**
+    * Open Obsidian and navigate to the settings menu.
+    * Locate the "AI Chat Plugin" settings tab.
+
+2. **Configurable Options:**
+    * **API Key:** Enter your Azure OpenAI API key.
+    * **Model Name:** Specify the model name (default: gpt-4o).
+    * **Temperature:** Adjust the temperature for the AI model (0 to 1).
+    * **Max Tokens:** Set the maximum number of tokens for the AI response.
+    * **Top-P:** Adjust the top-p value for the AI model (0 to 1).
+
+3. **Appearance Settings:**
+    * Customize the appearance of the chat interface, including font size, color scheme, and layout.
+
+4. **Behavior Settings:**
+    * Configure the behavior of the chat interface, such as enabling/disabling chat history, setting default prompts, and managing context window size.
+
+5. **Saving Settings:**
+    * After making changes, click the "Save" button to apply the new settings.
+
+6. **Resetting to Default:**
+    * If needed, you can reset the settings to their default values by clicking the "Reset to Default" button.
+
+By following these instructions, users can easily configure the chat interface appearance and behavior to suit their preferences.

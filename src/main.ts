@@ -127,4 +127,60 @@ export default class AIChatPlugin extends Plugin {
 			this.app.workspace.getLeavesOfType('AI_CHAT_VIEW')[0]
 		);
 	}
+
+	// Methods to save, load, and search chat histories
+async saveChatHistory(chatHistory: string[]) {
+    const filePath = 'chat-history.md';
+    let file = this.app.vault.getAbstractFileByPath(filePath);
+    if (file instanceof TFile) {
+        await this.app.vault.modify(file, chatHistory.join('\n'));
+    } else {
+        file = await this.app.vault.create(filePath, chatHistory.join('\n'));
+    }
+    return file;
+}
+
+	async loadChatHistory(): Promise<string[]> {
+		const file = this.app.vault.getAbstractFileByPath('chat-history.md');
+		if (file instanceof TFile) {
+			const content = await this.app.vault.read(file);
+			return content.split('\n');
+		}
+		return [];
+	}
+
+	async searchChatHistory(query: string): Promise<string[]> {
+		const chatHistory = await this.loadChatHistory();
+		return chatHistory.filter(message => message.includes(query));
+	}
+
+	// Methods to delete individual messages or clear the entire chat history
+async deleteMessageFromHistory(message: string) {
+    if (!message || message.trim().length === 0) {
+        return;
+    }
+    try {
+        let chatHistory = await this.loadChatHistory();
+        chatHistory = chatHistory.filter(msg => msg !== message);
+        await this.saveChatHistory(chatHistory);
+    } catch (error) {
+        console.error('Failed to delete message from history:', error);
+        throw new Error('Failed to delete message from history');
+    }
+}
+
+async clearChatHistory() {
+    try {
+        const file = this.app.vault.getAbstractFileByPath('chat-history.md');
+        if (file instanceof TFile) {
+            // Create backup before clearing
+            const backup = await this.app.vault.read(file);
+            await this.app.vault.create('chat-history.backup.md', backup);
+            await this.app.vault.modify(file, '');
+        }
+    } catch (error) {
+        console.error('Failed to clear chat history:', error);
+        throw new Error('Failed to clear chat history');
+    }
+}
 }
