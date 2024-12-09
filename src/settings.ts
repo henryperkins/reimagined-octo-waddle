@@ -68,7 +68,7 @@ export class AIChatSettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Model Name')
-			.setDesc('Enter the model name (default: gpt-4o)')
+			.setDesc('Enter the model name (default: gpt-4)')
 			.addText(text => text
 				.setPlaceholder('Enter the model name')
 				.setValue(this.plugin.settings.modelName)

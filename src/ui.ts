@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from 'obsidian';
+import { ItemView, WorkspaceLeaf, ButtonComponent, TextComponent, TextAreaComponent, Setting, debounce } from 'obsidian';
 import AIChatPlugin from './main';
 
 export const VIEW_TYPE_AI_CHAT = 'AI_CHAT_VIEW';
@@ -6,6 +6,7 @@ export const VIEW_TYPE_AI_CHAT = 'AI_CHAT_VIEW';
 export class AIChatView extends ItemView {
 	plugin: AIChatPlugin;
 	chatHistory: string[] = [];
+	maxHistorySize: number = 100;
 
 	constructor(leaf: WorkspaceLeaf, plugin: AIChatPlugin) {
 		super(leaf);
@@ -25,7 +26,7 @@ export class AIChatView extends ItemView {
 	}
 
 	async onClose() {
-		// Nothing to clean up
+		// Clean up any event listeners if necessary
 	}
 
 	async render() {
@@ -38,150 +39,182 @@ export class AIChatView extends ItemView {
 		chatBox.style.overflowY = 'scroll';
 		chatBox.style.maxHeight = '400px';
 
-		const inputBox = container.createEl('textarea', { cls: 'chat-input' });
-		const sendButton = container.createEl('button', { text: 'Send', cls: 'chat-send-button' });
+		const inputSetting = new Setting(container);
+		const inputBox = new TextAreaComponent(inputSetting.controlEl);
+		inputBox.setPlaceholder('Type your message here...');
+		inputBox.inputEl.style.width = '100%';
 
-		const settingsBox = container.createEl('div', { cls: 'settings-box' });
+		const sendButton = new ButtonComponent(inputSetting.controlEl);
+		sendButton.setButtonText('Send');
 
-		const temperatureLabel = settingsBox.createEl('label', { text: 'Temperature: ' });
-		const temperatureInput = settingsBox.createEl('input', { type: 'number', min: '0', max: '1', step: '0.01', value: this.plugin.settings.temperature.toString() });
-		temperatureInput.addEventListener('change', async () => {
-			this.plugin.settings.temperature = parseFloat(temperatureInput.value);
-			await this.plugin.saveSettings();
-		});
-
-		const maxTokensLabel = settingsBox.createEl('label', { text: 'Max Tokens: ' });
-		const maxTokensInput = settingsBox.createEl('input', { type: 'number', min: '1', value: this.plugin.settings.maxTokens.toString() });
-		maxTokensInput.addEventListener('change', async () => {
-			this.plugin.settings.maxTokens = parseInt(maxTokensInput.value);
-			await this.plugin.saveSettings();
-		});
-
-		const topPLabel = settingsBox.createEl('label', { text: 'Top-P: ' });
-		const topPInput = settingsBox.createEl('input', { type: 'number', min: '0', max: '1', step: '0.01', value: this.plugin.settings.topP.toString() });
-		topPInput.addEventListener('change', async () => {
-			this.plugin.settings.topP = parseFloat(topPInput.value);
-			await this.plugin.saveSettings();
-		});
-
-		const saveButton = container.createEl('button', { text: 'Save Chat History', cls: 'chat-save-button' });
-		const loadButton = container.createEl('button', { text: 'Load Chat History', cls: 'chat-load-button' });
-		const searchInput = container.createEl('input', { type: 'text', placeholder: 'Search Chat History', cls: 'chat-search-input' });
-		const searchButton = container.createEl('button', { text: 'Search', cls: 'chat-search-button' });
-		const clearButton = container.createEl('button', { text: 'Clear Chat History', cls: 'chat-clear-button' });
-		const exportButton = container.createEl('button', { text: 'Export Chat History', cls: 'chat-export-button' });
-
-		const loadingIndicator = container.createEl('div', { text: 'Loading...', cls: 'loading-indicator' });
-		loadingIndicator.style.display = 'none';
-
-		saveButton.addEventListener('click', async () => {
-			if (this.plugin.settings.enableChatHistory) {
-				await this.plugin.saveChatHistory(this.chatHistory);
-			}
-			if (this.plugin.settings.exportChatHistory) {
-				await this.exportChatHistory();
-			}
-		});
-
-		loadButton.addEventListener('click', async () => {
-			if (this.plugin.settings.enableChatHistory) {
-				this.chatHistory = await this.plugin.loadChatHistory();
-				this.updateChatHistory(chatBox);
-			}
-		});
-
-		searchButton.addEventListener('click', async () => {
-			if (this.plugin.settings.enableChatHistory) {
-				const query = searchInput.value;
-				if (query.trim() === '') return;
-
-				const searchResults = await this.plugin.searchChatHistory(query);
-				this.displaySearchResults(chatBox, searchResults);
-			}
-		});
-
-		clearButton.addEventListener('click', async () => {
-			if (this.plugin.settings.enableChatHistory) {
-				await this.plugin.clearChatHistory();
-				this.chatHistory = [];
-				this.updateChatHistory(chatBox);
-			}
-			if (this.plugin.settings.exportChatHistory) {
-				await this.exportChatHistory();
-			}
-		});
-
-		sendButton.addEventListener('click', async () => {
-			const query = inputBox.value;
+		// Apply debouncing to prevent rapid API calls
+		sendButton.onClick(debounce(async () => {
+			const query = inputBox.getValue();
 			if (query.trim() === '') return;
 
-			loadingIndicator.style.display = 'block';
+			this.displayLoadingIndicator(container, true);
 			const response = await this.plugin.handleUserQuery(query);
-			loadingIndicator.style.display = 'none';
+			this.displayLoadingIndicator(container, false);
 
-			this.displayResponse(chatBox, response);
 			this.chatHistory.push(`User: ${query} [${new Date().toLocaleTimeString()}]`);
 			this.chatHistory.push(`AI: ${response} [${new Date().toLocaleTimeString()}]`);
-			this.updateChatHistory(chatBox);
-			inputBox.value = '';
-		});
+			this.limitChatHistorySize();
 
-		inputBox.addEventListener('keydown', async (event) => {
+			this.updateChatHistory(chatBox);
+			inputBox.setValue('');
+		}, 500));
+
+		inputBox.inputEl.addEventListener('keydown', async (event) => {
 			if (event.key === 'Enter' && !event.shiftKey) {
 				event.preventDefault();
 				sendButton.click();
 			}
 		});
 
+		this.createSettingsBox(container);
+
 		this.updateChatHistory(chatBox);
 	}
 
-	displayResponse(chatBox: HTMLElement, response: string) {
-		const responseEl = chatBox.createEl('div', { cls: 'chat-response' });
-		responseEl.setText(response);
+	createSettingsBox(container: HTMLElement) {
+		const settingsBox = container.createEl('div', { cls: 'settings-box' });
+
+		// Temperature Setting
+		new Setting(settingsBox)
+			.setName('Temperature')
+			.addSlider(slider => {
+				slider.setLimits(0, 1, 0.01)
+					.setValue(this.plugin.settings.temperature)
+					.onChange(async (value) => {
+						this.plugin.settings.temperature = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		// Max Tokens Setting
+		new Setting(settingsBox)
+			.setName('Max Tokens')
+			.addText(text => {
+				text.setPlaceholder('Max Tokens')
+					.setValue(this.plugin.settings.maxTokens.toString())
+					.onChange(async (value) => {
+						this.plugin.settings.maxTokens = parseInt(value);
+						await this.plugin.saveSettings();
+					});
+			});
+
+		// Top-P Setting
+		new Setting(settingsBox)
+			.setName('Top-P')
+			.addSlider(slider => {
+				slider.setLimits(0, 1, 0.01)
+					.setValue(this.plugin.settings.topP)
+					.onChange(async (value) => {
+						this.plugin.settings.topP = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		// Buttons for Chat History Management
+		const buttonSetting = new Setting(settingsBox);
+		buttonSetting.infoEl.remove();
+
+		// Save Chat History Button
+		new ButtonComponent(buttonSetting.controlEl)
+			.setButtonText('Save Chat History')
+			.onClick(async () => {
+				if (this.plugin.settings.enableChatHistory) {
+					await this.plugin.saveChatHistory(this.chatHistory);
+				}
+				if (this.plugin.settings.exportChatHistory) {
+					await this.exportChatHistory();
+				}
+			});
+
+		// Load Chat History Button
+		new ButtonComponent(buttonSetting.controlEl)
+			.setButtonText('Load Chat History')
+			.onClick(async () => {
+				if (this.plugin.settings.enableChatHistory) {
+					this.chatHistory = await this.plugin.loadChatHistory();
+					this.updateChatHistory(this.containerEl.querySelector('.chat-box'));
+				}
+			});
+
+		// Clear Chat History Button
+		new ButtonComponent(buttonSetting.controlEl)
+			.setButtonText('Clear Chat History')
+			.onClick(async () => {
+				if (this.plugin.settings.enableChatHistory) {
+					await this.plugin.clearChatHistory();
+					this.chatHistory = [];
+					this.updateChatHistory(this.containerEl.querySelector('.chat-box'));
+				}
+				if (this.plugin.settings.exportChatHistory) {
+					await this.exportChatHistory();
+				}
+			});
+	}
+
+	displayLoadingIndicator(container: HTMLElement, show: boolean) {
+		let loadingIndicator = container.querySelector('.loading-indicator') as HTMLElement;
+		if (!loadingIndicator) {
+			loadingIndicator = container.createEl('div', { text: 'Loading...', cls: 'loading-indicator' });
+		}
+		loadingIndicator.style.display = show ? 'block' : 'none';
+	}
+
+	limitChatHistorySize() {
+		if (this.chatHistory.length > this.maxHistorySize) {
+			this.chatHistory = this.chatHistory.slice(this.chatHistory.length - this.maxHistorySize);
+		}
 	}
 
 	updateChatHistory(chatBox: HTMLElement) {
 		chatBox.empty();
 		this.chatHistory.forEach(message => {
-			const messageEl = chatBox.createEl('div', { cls: 'chat-message' });
-			messageEl.setText(message);
-
-			const deleteButton = messageEl.createEl('button', { text: 'Delete', cls: 'chat-delete-button' });
-			deleteButton.addEventListener('click', async () => {
-				await this.plugin.deleteMessageFromHistory(message);
-				this.chatHistory = this.chatHistory.filter(msg => msg !== message);
-				this.updateChatHistory(chatBox);
-			});
-
-			const editButton = messageEl.createEl('button', { text: 'Edit', cls: 'chat-edit-button' });
-			editButton.addEventListener('click', () => {
-				const newMessage = prompt('Edit your message:', message);
-				if (newMessage !== null) {
-					this.chatHistory = this.chatHistory.map(msg => msg === message ? newMessage : msg);
-					this.updateChatHistory(chatBox);
-				}
-			});
-
-			if (message.startsWith('User:')) {
-				messageEl.style.color = 'blue';
-			} else if (message.startsWith('AI:')) {
-				messageEl.style.color = 'green';
-			}
+			this.renderMessage(chatBox, message);
 		});
 	}
 
-	displaySearchResults(chatBox: HTMLElement, searchResults: string[]) {
-		chatBox.empty();
-		searchResults.forEach(result => {
-			const resultEl = chatBox.createEl('div', { cls: 'chat-search-result' });
-			resultEl.setText(result);
+	renderMessage(chatBox: HTMLElement, message: string) {
+		const messageEl = chatBox.createEl('div', { cls: 'chat-message' });
+		messageEl.setText(message);
+
+		const deleteButton = new ButtonComponent(messageEl);
+		deleteButton.setButtonText('Delete').onClick(async () => {
+			await this.plugin.deleteMessageFromHistory(message);
+			this.chatHistory = this.chatHistory.filter(msg => msg !== message);
+			this.updateChatHistory(chatBox);
 		});
+
+		const editButton = new ButtonComponent(messageEl);
+		editButton.setButtonText('Edit').onClick(() => {
+			const newMessage = prompt('Edit your message:', message);
+			if (newMessage !== null) {
+				this.chatHistory = this.chatHistory.map(msg => msg === message ? newMessage : msg);
+				this.updateChatHistory(chatBox);
+			}
+		});
+
+		if (message.startsWith('User:')) {
+			messageEl.style.color = 'blue';
+		} else if (message.startsWith('AI:')) {
+			messageEl.style.color = 'green';
+		}
 	}
 
 	async exportChatHistory() {
-		const filePath = 'chat-history-export.md';
-		const fileContent = this.chatHistory.join('\n');
-		await this.plugin.app.vault.create(filePath, fileContent);
+		const baseFileName = 'chat-history-export.md';
+		let fileName = baseFileName;
+		let counter = 1;
+
+		while (this.plugin.app.vault.getAbstractFileByPath(fileName)) {
+			fileName = `chat-history-export-${counter}.md`;
+			counter++;
+		}
+
+		const filePath = normalizePath(fileName);
+		await this.plugin.app.vault.create(filePath, this.chatHistory.join('\n'));
 	}
 }
