@@ -53,11 +53,10 @@ export default class AIChatPlugin extends Plugin {
 			let context = notes.join('\n');
 
 			if (!context || context.trim() === '') {
-				context = 'No relevant notes found.';
+				return 'No relevant notes found. Please refine your query or add more notes.';
 			}
 
-			const response = await this.queryOpenAI(context, query);
-			return response;
+			return await this.queryOpenAI(context, query);
 		} catch (error) {
 			console.error('Error handling user query:', error);
 			return 'An error occurred while processing your request. Please try again.';
