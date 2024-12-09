@@ -218,3 +218,29 @@ export class AIChatView extends ItemView {
 		await this.plugin.app.vault.create(filePath, this.chatHistory.join('\n'));
 	}
 }
+    renderMessage(chatBox: HTMLElement, message: string) {
+        const messageEl = chatBox.createEl('div', { cls: 'chat-message' });
+        messageEl.setText(message);
+
+        const deleteButton = new ButtonComponent(messageEl);
+        deleteButton.setButtonText('Delete').onClick(async () => {
+            await this.plugin.deleteMessageFromHistory(message);
+            this.chatHistory = this.chatHistory.filter(msg => msg !== message);
+            this.updateChatHistory(chatBox);
+        });
+
+        const editButton = new ButtonComponent(messageEl);
+        editButton.setButtonText('Edit').onClick(() => {
+            const newMessage = prompt('Edit your message:', message);
+            if (newMessage !== null) {
+                this.chatHistory = this.chatHistory.map(msg => msg === message ? newMessage : msg);
+                this.updateChatHistory(chatBox);
+            }
+        });
+
+        if (message.startsWith('User:')) {
+            messageEl.style.color = 'blue';
+        } else if (message.startsWith('AI:')) {
+            messageEl.style.color = 'green';
+        }
+    }
