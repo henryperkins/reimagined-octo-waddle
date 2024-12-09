@@ -72,11 +72,13 @@ export class AIChatSettingsTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.maxTokens.toString())
 				.onChange(async (value) => {
 					const intValue = parseInt(value);
-					if (!isNaN(intValue) && intValue > 0) {
-						this.plugin.settings.maxTokens = intValue;
-						await this.plugin.saveSettings();
+					if (Number.isNaN(intValue) || intValue <= 0 || intValue > 4000) {
+						// Reset to default if invalid
+						text.setValue(this.plugin.settings.maxTokens.toString());
+						return;
 					}
-				}));
+					this.plugin.settings.maxTokens = intValue;
+					await this.plugin.saveSettings();
 
 		new Setting(containerEl)
 			.setName('Top-P')
