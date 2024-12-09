@@ -100,53 +100,7 @@ export default class AIChatPlugin extends Plugin {
 	}
 
 	async queryOpenAI(context: string, query: string): Promise<string> {
-		const apiKey = this.settings.apiKey.trim();
-		if (!apiKey) {
-			return 'Error: API Key is not set. Please enter your API Key in the plugin settings.';
-		}
-		const modelName = this.settings.modelName || 'gpt-4';
-		const temperature = this.settings.temperature;
-		const maxTokens = this.settings.maxTokens;
-		const topP = this.settings.topP;
-
-		if (!context || context.trim() === '') {
-			context = 'No relevant notes found.';
-		}
-
-		const combinedSystemPrompt = `${SYSTEM_PROMPT}\n\nUser's Notes:\n${context}`;
-
-		try {
-			const response = await axios.post(
-				AZURE_OPENAI_ENDPOINT,
-				{
-					model: modelName,
-					messages: [
-						{ role: 'system', content: combinedSystemPrompt },
-						{ role: 'user', content: query }
-					],
-					temperature: temperature,
-					max_tokens: maxTokens,
-					top_p: topP
-				},
-				{
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${apiKey}`
-					}
-				}
-			);
-
-			return response.data.choices[0].message.content;
-		} catch (error) {
-			console.error('Error querying OpenAI:', error);
-
-			if (axios.isAxiosError(error)) {
-				const errorMessage = error.response?.data?.error?.message || error.message;
-				return `Error querying OpenAI API: ${errorMessage}`;
-			}
-
-			return 'An unexpected error occurred while processing your request. Please check your network connection and try again.';
-		}
+		return await this.makeOpenAIRequest(context, query);
 	}
 
 	async activateView() {
