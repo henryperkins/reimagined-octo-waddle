@@ -183,4 +183,11 @@ async clearChatHistory() {
         throw new Error('Failed to clear chat history');
     }
 }
+
+// Method to preprocess text data from notes before sending it to the AI model
+preprocessTextData(text: string): string {
+    // Implement any necessary preprocessing steps here
+    // For example, removing special characters, normalizing whitespace, etc.
+    return text.replace(/[\r\n]+/g, ' ').trim();
+}
 }
