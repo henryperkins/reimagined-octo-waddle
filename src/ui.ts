@@ -35,18 +35,26 @@ export class AIChatView extends ItemView {
 		const inputBox = container.createEl('textarea', { cls: 'chat-input' });
 		const sendButton = container.createEl('button', { text: 'Send', cls: 'chat-send-button' });
 
+		const chatHistory = container.createEl('div', { cls: 'chat-history' });
+		const controls = container.createEl('div', { cls: 'chat-controls' });
+
+		controls.appendChild(inputBox);
+		controls.appendChild(sendButton);
+		container.appendChild(chatHistory);
+		container.appendChild(controls);
+
 		sendButton.addEventListener('click', async () => {
 			const query = inputBox.value;
 			if (query.trim() === '') return;
 
 			const response = await this.plugin.handleUserQuery(query);
-			this.displayResponse(chatBox, response);
+			this.displayResponse(chatHistory, response);
 			inputBox.value = '';
 		});
 	}
 
-	displayResponse(chatBox: HTMLElement, response: string) {
-		const responseEl = chatBox.createEl('div', { cls: 'chat-response' });
+	displayResponse(chatHistory: HTMLElement, response: string) {
+		const responseEl = chatHistory.createEl('div', { cls: 'chat-response' });
 		responseEl.setText(response);
 	}
 }
