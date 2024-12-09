@@ -17,6 +17,7 @@ export interface AIChatSettings {
 	searchChatHistory: boolean;
 	deleteMessageFromHistory: boolean;
 	clearChatHistory: boolean;
+	exportChatHistory: boolean; // Added for exporting chat history
 }
 
 export const DEFAULT_SETTINGS: AIChatSettings = {
@@ -35,7 +36,8 @@ export const DEFAULT_SETTINGS: AIChatSettings = {
 	loadChatHistory: true,
 	searchChatHistory: true,
 	deleteMessageFromHistory: true,
-	clearChatHistory: true
+	clearChatHistory: true,
+	exportChatHistory: true // Added for exporting chat history
 }
 
 export class AIChatSettingsTab extends PluginSettingTab {
@@ -234,6 +236,16 @@ export class AIChatSettingsTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.clearChatHistory)
 				.onChange(async (value) => {
 					this.plugin.settings.clearChatHistory = value;
+					await this.plugin.saveSettings();
+					}));
+
+		new Setting(containerEl)
+			.setName('Export Chat History')
+			.setDesc('Enable or disable exporting chat history to a file')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.exportChatHistory)
+				.onChange(async (value) => {
+					this.plugin.settings.exportChatHistory = value;
 					await this.plugin.saveSettings();
 				}));
 	}

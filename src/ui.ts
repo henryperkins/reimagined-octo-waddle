@@ -32,7 +32,12 @@ export class AIChatView extends ItemView {
 		const container = this.containerEl.children[1];
 		container.empty();
 
+		const header = container.createEl('h1', { text: 'AI Chat Interface' });
+
 		const chatBox = container.createEl('div', { cls: 'chat-box' });
+		chatBox.style.overflowY = 'scroll';
+		chatBox.style.maxHeight = '400px';
+
 		const inputBox = container.createEl('textarea', { cls: 'chat-input' });
 		const sendButton = container.createEl('button', { text: 'Send', cls: 'chat-send-button' });
 
@@ -64,10 +69,17 @@ export class AIChatView extends ItemView {
 		const searchInput = container.createEl('input', { type: 'text', placeholder: 'Search Chat History', cls: 'chat-search-input' });
 		const searchButton = container.createEl('button', { text: 'Search', cls: 'chat-search-button' });
 		const clearButton = container.createEl('button', { text: 'Clear Chat History', cls: 'chat-clear-button' });
+		const exportButton = container.createEl('button', { text: 'Export Chat History', cls: 'chat-export-button' });
+
+		const loadingIndicator = container.createEl('div', { text: 'Loading...', cls: 'loading-indicator' });
+		loadingIndicator.style.display = 'none';
 
 		saveButton.addEventListener('click', async () => {
 			if (this.plugin.settings.enableChatHistory) {
 				await this.plugin.saveChatHistory(this.chatHistory);
+			}
+			if (this.plugin.settings.exportChatHistory) {
+				await this.exportChatHistory();
 			}
 		});
 
@@ -94,17 +106,31 @@ export class AIChatView extends ItemView {
 				this.chatHistory = [];
 				this.updateChatHistory(chatBox);
 			}
+			if (this.plugin.settings.exportChatHistory) {
+				await this.exportChatHistory();
+			}
 		});
+
 		sendButton.addEventListener('click', async () => {
 			const query = inputBox.value;
 			if (query.trim() === '') return;
 
+			loadingIndicator.style.display = 'block';
 			const response = await this.plugin.handleUserQuery(query);
+			loadingIndicator.style.display = 'none';
+
 			this.displayResponse(chatBox, response);
-			this.chatHistory.push(`User: ${query}`);
-			this.chatHistory.push(`AI: ${response}`);
+			this.chatHistory.push(`User: ${query} [${new Date().toLocaleTimeString()}]`);
+			this.chatHistory.push(`AI: ${response} [${new Date().toLocaleTimeString()}]`);
 			this.updateChatHistory(chatBox);
 			inputBox.value = '';
+		});
+
+		inputBox.addEventListener('keydown', async (event) => {
+			if (event.key === 'Enter' && !event.shiftKey) {
+				event.preventDefault();
+				sendButton.click();
+			}
 		});
 
 		this.updateChatHistory(chatBox);
@@ -127,6 +153,21 @@ export class AIChatView extends ItemView {
 				this.chatHistory = this.chatHistory.filter(msg => msg !== message);
 				this.updateChatHistory(chatBox);
 			});
+
+			const editButton = messageEl.createEl('button', { text: 'Edit', cls: 'chat-edit-button' });
+			editButton.addEventListener('click', () => {
+				const newMessage = prompt('Edit your message:', message);
+				if (newMessage !== null) {
+					this.chatHistory = this.chatHistory.map(msg => msg === message ? newMessage : msg);
+					this.updateChatHistory(chatBox);
+				}
+			});
+
+			if (message.startsWith('User:')) {
+				messageEl.style.color = 'blue';
+			} else if (message.startsWith('AI:')) {
+				messageEl.style.color = 'green';
+			}
 		});
 	}
 
@@ -136,5 +177,11 @@ export class AIChatView extends ItemView {
 			const resultEl = chatBox.createEl('div', { cls: 'chat-search-result' });
 			resultEl.setText(result);
 		});
+	}
+
+	async exportChatHistory() {
+		const filePath = 'chat-history-export.md';
+		const fileContent = this.chatHistory.join('\n');
+		await this.plugin.app.vault.create(filePath, fileContent);
 	}
 }
