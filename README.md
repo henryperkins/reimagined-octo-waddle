@@ -150,4 +150,3 @@ Thank you for providing the full endpoint URL. This is helpful. Based on the URL
 **6. TypeScript and Development Environment:** (Same as before)
 
 *   Assume knowledge of TypeScript and Node.js. Use standard libraries for Obsidian plugin development and Azure OpenAI interaction.
-
