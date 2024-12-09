@@ -169,7 +169,18 @@ async deleteMessageFromHistory(message: string) {
     }
 }
 
-	async clearChatHistory() {
-		await this.app.vault.modify(await this.app.vault.getAbstractFileByPath('chat-history.md') as TFile, '');
-	}
+async clearChatHistory() {
+    try {
+        const file = this.app.vault.getAbstractFileByPath('chat-history.md');
+        if (file instanceof TFile) {
+            // Create backup before clearing
+            const backup = await this.app.vault.read(file);
+            await this.app.vault.create('chat-history.backup.md', backup);
+            await this.app.vault.modify(file, '');
+        }
+    } catch (error) {
+        console.error('Failed to clear chat history:', error);
+        throw new Error('Failed to clear chat history');
+    }
+}
 }
