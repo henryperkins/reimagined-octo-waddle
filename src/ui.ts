@@ -35,6 +35,29 @@ export class AIChatView extends ItemView {
 		const inputBox = container.createEl('textarea', { cls: 'chat-input' });
 		const sendButton = container.createEl('button', { text: 'Send', cls: 'chat-send-button' });
 
+		const settingsBox = container.createEl('div', { cls: 'settings-box' });
+
+		const temperatureLabel = settingsBox.createEl('label', { text: 'Temperature: ' });
+		const temperatureInput = settingsBox.createEl('input', { type: 'number', min: '0', max: '1', step: '0.01', value: this.plugin.settings.temperature.toString() });
+		temperatureInput.addEventListener('change', async () => {
+			this.plugin.settings.temperature = parseFloat(temperatureInput.value);
+			await this.plugin.saveSettings();
+		});
+
+		const maxTokensLabel = settingsBox.createEl('label', { text: 'Max Tokens: ' });
+		const maxTokensInput = settingsBox.createEl('input', { type: 'number', min: '1', value: this.plugin.settings.maxTokens.toString() });
+		maxTokensInput.addEventListener('change', async () => {
+			this.plugin.settings.maxTokens = parseInt(maxTokensInput.value);
+			await this.plugin.saveSettings();
+		});
+
+		const topPLabel = settingsBox.createEl('label', { text: 'Top-P: ' });
+		const topPInput = settingsBox.createEl('input', { type: 'number', min: '0', max: '1', step: '0.01', value: this.plugin.settings.topP.toString() });
+		topPInput.addEventListener('change', async () => {
+			this.plugin.settings.topP = parseFloat(topPInput.value);
+			await this.plugin.saveSettings();
+		});
+
 		sendButton.addEventListener('click', async () => {
 			const query = inputBox.value;
 			if (query.trim() === '') return;

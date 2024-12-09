@@ -67,6 +67,9 @@ export default class AIChatPlugin extends Plugin {
 	async queryOpenAI(context: string, query: string): Promise<string> {
 		const apiKey = this.settings.apiKey;
 		const modelName = this.settings.modelName || 'gpt-4o';
+		const temperature = this.settings.temperature;
+		const maxTokens = this.settings.maxTokens;
+		const topP = this.settings.topP;
 
 		const response = await axios.post(
 			AZURE_OPENAI_ENDPOINT,
@@ -76,7 +79,10 @@ export default class AIChatPlugin extends Plugin {
 					{ role: 'system', content: SYSTEM_PROMPT },
 					{ role: 'user', content: query },
 					{ role: 'assistant', content: context }
-				]
+				],
+				temperature: temperature,
+				max_tokens: maxTokens,
+				top_p: topP
 			},
 			{
 				headers: {
