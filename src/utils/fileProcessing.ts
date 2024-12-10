@@ -1,4 +1,4 @@
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 import type { FileProcessingResult } from '../types';
 
 export class FileProcessingService {

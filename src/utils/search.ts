@@ -1,4 +1,4 @@
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 import type { SearchResult, SearchOptions } from '../types';
 
 export class SearchService {

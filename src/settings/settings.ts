@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 import { AIChatSettings } from '../types';
 
 export const DEFAULT_SETTINGS: AIChatSettings = {

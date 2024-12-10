@@ -1,4 +1,4 @@
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 import { Notice } from 'obsidian';
 
 export class SummarizationError extends Error {

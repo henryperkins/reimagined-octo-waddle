@@ -4,7 +4,7 @@ import { ChatView } from './components/ChatView';
 import { SearchView } from './components/SearchView';
 import { ConversationList } from './components/ConversationList';
 import React, { useState } from 'react';
-import type AIChatPlugin from './main';
+import type AIChatPlugin from '../main';
 import type { SearchResult } from './types';
 
 export const VIEW_TYPE_AI_CHAT = 'ai-chat-view';

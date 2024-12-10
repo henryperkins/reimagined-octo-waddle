@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { SearchResult } from '../types';
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 import { Card, CardHeader, CardContent } from './Card';
 import { Input } from './Input';
 import { Button } from './Button';

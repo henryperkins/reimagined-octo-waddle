@@ -1,4 +1,4 @@
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 
 interface AIRequestOptions {
     model: string;

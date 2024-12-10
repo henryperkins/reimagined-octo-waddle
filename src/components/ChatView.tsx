@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 import { ChatMessage } from './ChatMessage';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -14,6 +14,7 @@ interface ChatViewProps {
 export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,6 +31,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
         if (!message.trim() || isLoading) return;
 
         setIsLoading(true);
+        setError(null);
         try {
             const newMessage: ChatMessageType = {
                 id: crypto.randomUUID(),
@@ -51,6 +53,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
             });
         } catch (error) {
             console.error('Error sending message:', error);
+            setError('An error occurred while processing your message. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -61,6 +64,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
         if (!file) return;
 
         setIsLoading(true);
+        setError(null);
         try {
             const result = await plugin.handleFileUpload(file);
             if (result.success) {
@@ -78,6 +82,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
             }
         } catch (error) {
             console.error('Error uploading file:', error);
+            setError('An error occurred while uploading the file. Please try again.');
         } finally {
             setIsLoading(false);
             if (fileInputRef.current) {
@@ -123,6 +128,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
                         }
                     />
                 ))}
+                {error && (
+                    <div className="error-message">
+                        {error}
+                    </div>
+                )}
                 <div ref={messagesEndRef} />
                 {isLoading && (
                     <div className="loading-message">

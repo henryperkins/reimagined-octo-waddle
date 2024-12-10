@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { ItemView, WorkspaceLeaf, App } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
-import type AIChatPlugin from '../main';
+import type AIChatPlugin from '../../main';
 import { ChatView } from './ChatView';
 import { SearchView } from './SearchView';
 import { ConversationList } from './ConversationList';
