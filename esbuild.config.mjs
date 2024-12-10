@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import alias from "esbuild-plugin-alias";
 
 const banner =
 `/*
@@ -38,6 +39,11 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
+	plugins: [
+		alias({
+			'@': './src'
+		})
+	]
 });
 
 if (prod) {

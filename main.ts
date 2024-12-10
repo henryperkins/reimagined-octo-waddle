@@ -1,31 +1,50 @@
-import { Plugin, Notice, addIcon, TFile } from 'obsidian';
-import { AIChatView } from './src/components/AIChatView';
-import { AIChatSettingsTab, DEFAULT_SETTINGS } from './src/settings/settings';
+import { Plugin, Notice, addIcon, TFile, WorkspaceLeaf, App } from 'obsidian';
+import { AIChatView } from '@/components/AIChatView';
+import { AIChatSettingsTab, DEFAULT_SETTINGS } from '@/settings/settings';
 import {
   AIChatSettings,
   Conversation,
   ChatMessage,
   FileProcessingResult
-} from './src/types';
-import { FileProcessingService } from './src/utils/fileProcessing';
-import { SummarizationService } from './src/utils/summarization';
-import { SearchService } from './src/utils/search';
-import { queryOpenAI } from './src/utils/aiInteraction';
+} from '@/types';
+import { FileProcessingService } from '@/utils/fileProcessing';
+import { SummarizationService } from '@/utils/summarization';
+import { SearchService } from '@/utils/search';
+import { queryOpenAI } from '@/utils/aiInteraction';
 
 const CHAT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
 const VIEW_TYPE_AI_CHAT = 'ai-chat-view';
 
 export default class AIChatPlugin extends Plugin {
-  settings: AIChatSettings;
+  settings: AIChatSettings = DEFAULT_SETTINGS;
   conversations: { [key: string]: Conversation } = {};
-  currentConversationId: string;
-  statusBarItem: HTMLElement;
+  currentConversationId: string = '';
+  statusBarItem!: HTMLElement;
   tokenCount: number = 0;
   
   // Services
-  private fileProcessor: FileProcessingService;
+  private fileProcessor: FileProcessingService = new FileProcessingService();
   private summarizer: SummarizationService;
   private searchService: SearchService;
+
+  constructor(app: App, manifest: any) {
+    super(app, manifest);
+    this.summarizer = new SummarizationService(this);
+    this.searchService = new SearchService(this);
+  }
+
+  async deleteConversation(id: string) {
+    if (this.conversations[id]) {
+      delete this.conversations[id];
+      if (id === this.currentConversationId) {
+        this.currentConversationId = '';
+      }
+    }
+  }
+
+  async processFile(file: File): Promise<string> {
+    return await this.fileProcessor.processFile(file);
+  }
 
   async onload() {
     console.log('Loading AI Chat Plugin');
@@ -34,9 +53,6 @@ export default class AIChatPlugin extends Plugin {
     await this.loadSettings();
 
     // Initialize services
-    this.fileProcessor = new FileProcessingService();
-    this.summarizer = new SummarizationService(this);
-    this.searchService = new SearchService(this);
     await this.searchService.initialize();
 
     // Register chat icon
@@ -100,16 +116,21 @@ export default class AIChatPlugin extends Plugin {
     
     if (!leaf) {
       // Create new leaf in right sidebar
-      leaf = workspace.getRightLeaf(false);
-      await leaf.setViewState({
-        type: VIEW_TYPE_AI_CHAT,
-        active: true,
-      });
+      const rightLeaf = workspace.getRightLeaf(false);
+      if (rightLeaf) {
+        await rightLeaf.setViewState({
+          type: VIEW_TYPE_AI_CHAT,
+          active: true,
+        });
+        leaf = rightLeaf;
+      }
     }
 
     // Reveal and focus leaf
-    workspace.revealLeaf(leaf);
-    workspace.setActiveLeaf(leaf, { focus: true });
+    if (leaf) {
+      workspace.revealLeaf(leaf);
+      workspace.setActiveLeaf(leaf, { focus: true });
+    }
   }
 
   // Conversation Management
@@ -230,11 +251,15 @@ export default class AIChatPlugin extends Plugin {
     try {
       // Validate file
       if (!this.settings.supportedFileTypes.includes(`.${file.name.split('.').pop()}`)) {
-        throw new Error('Unsupported file type');
+        return {
+          message: 'Unsupported file type'
+        };
       }
 
       if (file.size > this.settings.fileUploadLimit * 1024 * 1024) {
-        throw new Error('File size exceeds limit');
+        return {
+          message: 'File size exceeds limit'
+        };
       }
 
       // Process file
@@ -242,15 +267,13 @@ export default class AIChatPlugin extends Plugin {
       const filePath = await this.saveFileToVault(file);
       
       return {
-        success: true,
         message: 'File processed successfully',
         filePath
       };
     } catch (error) {
-      console.error('Error processing file:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return {
-        success: false,
-        message: error.message
+        message: errorMessage
       };
     }
   }

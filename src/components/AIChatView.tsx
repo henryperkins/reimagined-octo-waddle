@@ -66,17 +66,24 @@ export class AIChatView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
-    this.root = createRoot(this.containerEl.children[1]);
+    const container = this.containerEl.children[1];
+    this.root = createRoot(container);
     this.root.render(
       <ObsidianContext.Provider value={this.app}>
         <ChatView plugin={this.plugin} />
       </ObsidianContext.Provider>
     );
+    this.applyTheme();
   }
 
   async onClose(): Promise<void> {
     this.root?.unmount();
   }
-}
 
-export default AIChatView;
+  applyTheme(): void {
+    // Apply the current theme to the view
+    const isDark = document.body.classList.contains('theme-dark');
+    this.containerEl.classList.toggle('theme-dark', isDark);
+    this.containerEl.classList.toggle('theme-light', !isDark);
+  }
+}
