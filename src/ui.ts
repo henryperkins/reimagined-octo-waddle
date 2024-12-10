@@ -1,5 +1,6 @@
 import { ItemView, WorkspaceLeaf, ButtonComponent, TextAreaComponent, Setting, debounce } from 'obsidian';
 import AIChatPlugin from './main';
+import Quill from 'quill';
 
 export const VIEW_TYPE_AI_CHAT = 'AI_CHAT_VIEW';
 
@@ -7,6 +8,7 @@ export class AIChatView extends ItemView {
 	plugin: AIChatPlugin;
 	chatHistory: string[] = [];
 	maxHistorySize: number = 100;
+	quill: Quill;
 
 	constructor(leaf: WorkspaceLeaf, plugin: AIChatPlugin) {
 		super(leaf);
@@ -74,6 +76,27 @@ export class AIChatView extends ItemView {
 		this.createSettingsBox(container);
 
 		this.updateChatHistory(chatBox);
+
+		// Initialize Quill editor for rich text support
+		this.quill = new Quill(inputBox.inputEl, {
+			modules: {
+				toolbar: [
+					['bold', 'italic', 'underline'],
+					[{ 'list': 'ordered'}, { 'list': 'bullet' }],
+					['link', 'image']
+				]
+			},
+			theme: 'snow'
+		});
+
+		// Add preview mode toggle
+		const previewToggle = new ButtonComponent(inputSetting.controlEl);
+		previewToggle.setButtonText('Preview').onClick(() => {
+			const previewMode = previewToggle.getButtonText() === 'Preview';
+			previewToggle.setButtonText(previewMode ? 'Edit' : 'Preview');
+			inputBox.inputEl.style.display = previewMode ? 'none' : 'block';
+			this.quill.root.style.display = previewMode ? 'block' : 'none';
+		});
 	}
 
 	createSettingsBox(container: HTMLElement) {
@@ -179,7 +202,7 @@ export class AIChatView extends ItemView {
 
 	renderMessage(chatBox: HTMLElement, message: string) {
 		const messageEl = chatBox.createEl('div', { cls: 'chat-message' });
-		messageEl.setText(message);
+		messageEl.innerHTML = this.plugin.sanitizeInput(message);
 
 		const deleteButton = new ButtonComponent(messageEl);
 		deleteButton.setButtonText('Delete').onClick(async () => {

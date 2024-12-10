@@ -207,3 +207,35 @@ This plugin now includes specific compatibility for Azure OpenAI. The following 
     * If needed, you can reset the settings to their default values by clicking the "Reset to Default" button.
 
 By following these instructions, users can easily configure the chat interface appearance and behavior to suit their preferences.
+
+**New Features:**
+
+1. **Advanced Search:**
+    * The plugin now supports advanced search features like fuzzy search, semantic search, and filtering by tags, dates, or note types. This enhances the note retrieval process, making it more efficient and accurate.
+
+2. **Note Linking:**
+    * Users can now link specific notes directly in the chat interface. This feature allows for easy reference and navigation to relevant notes, improving the overall user experience.
+
+3. **Note Summarization:**
+    * The plugin provides a summary of the content of the retrieved notes before presenting them to the AI model. This makes the context more concise and relevant, enhancing the quality of AI responses.
+
+4. **Rich Text Support:**
+    * The chat interface now supports rich text formatting, allowing users to use bold, italics, and other text styles. This improves readability and user engagement.
+
+5. **Customizable Themes:**
+    * Users can choose from a variety of themes for the chat interface, including dark mode, light mode, and custom color schemes. This feature enhances the visual appeal and user experience.
+
+6. **Scrollable Chat History:**
+    * The chat interface now includes a scrollable chat history, making it easier for users to review previous conversations without cluttering the interface.
+
+7. **User-Friendly Toolbar:**
+    * A user-friendly toolbar with formatting options like bold, italics, and lists has been added to the chat input area. This makes it easier for users to format their text.
+
+8. **Preview Mode:**
+    * Users can preview their formatted text before sending it. This feature allows users to ensure their message appears as intended before sending it to the AI.
+
+9. **Sanitized User Input:**
+    * User input is sanitized using DOMPurify to prevent XSS attacks. This enhances the security of the plugin.
+
+10. **Markdown Support:**
+    * The chat interface supports markdown syntax for text formatting. Markdown is converted to HTML before displaying it in the chat interface, providing a familiar and flexible formatting option for users.

@@ -3,6 +3,8 @@ import { hello } from './hello';
 import axios from 'axios';
 import { AIChatSettingsTab, AIChatSettings, DEFAULT_SETTINGS } from './settings';
 import { AIChatView } from './ui';
+import DOMPurify from 'dompurify';
+import * as fuzzysort from 'fuzzysort';
 
 const AZURE_OPENAI_ENDPOINT = 'https://openai-hp.openai.azure.com/openai/deployments/o1-preview/chat/completions?api-version=2024-08-01-preview';
 const SYSTEM_PROMPT = 'You are an AI assistant designed to help users understand and analyze their notes in Obsidian. Answer the user\'s questions based on the provided notes from their vault. Be concise and informative.';
@@ -41,9 +43,7 @@ export default class AIChatPlugin extends Plugin {
 	}
 
 	sanitizeInput(input: string): string {
-		const div = document.createElement('div');
-		div.textContent = input;
-		return div.innerHTML;
+		return DOMPurify.sanitize(input);
 	}
 
 	async handleUserQuery(query: string) {
@@ -56,11 +56,18 @@ export default class AIChatPlugin extends Plugin {
 				return 'No relevant notes found. Please refine your query or add more notes.';
 			}
 
-			return await this.queryOpenAI(context, query);
+			const summarizedContext = this.summarizeNotes(context);
+			return await this.queryOpenAI(summarizedContext, query);
 		} catch (error) {
 			console.error('Error handling user query:', error);
 			return 'An error occurred while processing your request. Please try again.';
 		}
+	}
+
+	summarizeNotes(notes: string): string {
+		// Implement a simple summarization logic here
+		// For example, return the first 500 characters of the notes
+		return notes.length > 500 ? notes.substring(0, 500) + '...' : notes;
 	}
 
 	async retrieveRelevantNotes(query: string): Promise<string[]> {
@@ -90,7 +97,9 @@ export default class AIChatPlugin extends Plugin {
 
 		searchResults.sort((a, b) => b.score - a.score);
 
-		return searchResults.map(result => result.content);
+		// Apply fuzzy search
+		const fuzzyResults = fuzzysort.go(query, searchResults, { key: 'content' });
+		return fuzzyResults.map(result => result.obj.content);
 	}
 
 	getTagScore(file: TFile, query: string): number {

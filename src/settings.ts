@@ -18,6 +18,7 @@ export interface AIChatSettings {
 	deleteMessageFromHistory: boolean;
 	clearChatHistory: boolean;
 	exportChatHistory: boolean; // Added for exporting chat history
+	customTheme: string; // Added for customizable themes
 }
 
 export const DEFAULT_SETTINGS: AIChatSettings = {
@@ -37,7 +38,8 @@ export const DEFAULT_SETTINGS: AIChatSettings = {
 	searchChatHistory: true,
 	deleteMessageFromHistory: true,
 	clearChatHistory: true,
-	exportChatHistory: true // Added for exporting chat history
+	exportChatHistory: true, // Added for exporting chat history
+	customTheme: 'default' // Added for customizable themes
 }
 
 export class AIChatSettingsTab extends PluginSettingTab {
@@ -251,6 +253,20 @@ export class AIChatSettingsTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.exportChatHistory)
 				.onChange(async (value) => {
 					this.plugin.settings.exportChatHistory = value;
+					await this.plugin.saveSettings();
+					}));
+
+		new Setting(containerEl)
+			.setName('Custom Theme')
+			.setDesc('Select a custom theme for the chat interface')
+			.addDropdown(dropdown => dropdown
+				.addOption('default', 'Default')
+				.addOption('dark', 'Dark')
+				.addOption('light', 'Light')
+				.addOption('custom', 'Custom')
+				.setValue(this.plugin.settings.customTheme)
+				.onChange(async (value) => {
+					this.plugin.settings.customTheme = value;
 					await this.plugin.saveSettings();
 				}));
 	}
