@@ -20,7 +20,11 @@
       "ES7"
     ],
     "paths": {
-      "*": ["src/*"]
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@utils/*": ["src/utils/*"],
+      "@types/*": ["src/types/*"],
+      "@lib/*": ["src/lib/*"]
     }
   },
   "include": [

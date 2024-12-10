@@ -19,3 +19,10 @@ export { AIChatView } from './AIChatView';
 
 // Re-export UI components
 export * from './ui/button';
+export * from './Button';
+export * from './Card';
+export * from './ChatMessage';
+export * from './ChatView';
+export * from './ConversationList';
+export * from './Input';
+export * from './SearchView';
