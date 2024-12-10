@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import type { Conversation } from '../types';
-import { Card, CardHeader, CardContent } from './Card';
-import { Button } from './Button';
-import { Input } from './Input';
+import { 
+    Card, 
+    CardHeader, 
+    CardContent,
+    Button,
+    Input 
+} from './';
 
 interface ConversationListProps {
     conversations: { [key: string]: Conversation };

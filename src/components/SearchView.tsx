@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import type { SearchResult } from '../types';
 import type AIChatPlugin from '../../main';
-import { Card, CardHeader, CardContent } from './Card';
-import { Input } from './Input';
-import { Button } from './Button';
+import { 
+    Card, 
+    CardHeader, 
+    CardContent,
+    Input,
+    Button 
+} from './';
 
 interface SearchViewProps {
     plugin: AIChatPlugin;
