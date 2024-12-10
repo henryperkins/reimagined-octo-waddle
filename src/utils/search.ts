@@ -1,121 +1,154 @@
-import type AIChatPlugin from '../../main';
-import type { SearchResult, SearchOptions } from '../types';
+import { TFile } from 'obsidian';
+import Fuse from 'fuse.js';
+import { AIChatPlugin } from '../types';
+import * as tf from '@tensorflow/tfjs';
+import * as use from '@tensorflow-models/universal-sentence-encoder';
+
+export class SearchError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly details?: any
+  ) {
+    super(message);
+    this.name = 'SearchError';
+  }
+}
+
+interface SearchResult {
+  file: TFile;
+  content: string;
+  score: number;
+  excerpt?: string;
+}
+
+interface SearchOptions {
+  fuzzyThreshold?: number;
+  maxResults?: number;
+  includeExcerpts?: boolean;
+  semanticSearch?: boolean;
+}
 
 export class SearchService {
-    private plugin: AIChatPlugin;
+  private model: any | null = null;
 
-    constructor(plugin: AIChatPlugin) {
-        this.plugin = plugin;
+  constructor(private plugin: AIChatPlugin) {}
+
+  async initialize(): Promise<void> {
+    if (this.plugin.settings.useSemanticSearch) {
+      try {
+        await tf.ready();
+        this.model = await use.load();
+      } catch (error) {
+        console.error('Failed to load Universal Sentence Encoder:', error);
+        this.model = null;
+      }
     }
+  }
 
-    async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
-        const {
-            caseSensitive = false,
-            includeFiles = true,
-            includeConversations = true,
-            maxResults = 10
-        } = options;
+  async search(
+    query: string,
+    options: SearchOptions = {}
+  ): Promise<SearchResult[]> {
+    const {
+      fuzzyThreshold = 0.3,
+      maxResults = 10,
+      includeExcerpts = true,
+      semanticSearch = false
+    } = options;
 
-        const results: SearchResult[] = [];
+    try {
+      let results: SearchResult[];
 
-        // Prepare search query
-        const searchRegex = new RegExp(
-            this.escapeRegExp(query),
-            caseSensitive ? 'g' : 'gi'
-        );
+      if (semanticSearch && this.model) {
+        results = await this.semanticSearch(query, maxResults);
+      } else {
+        results = await this.fuzzySearch(query, fuzzyThreshold, maxResults);
+      }
 
-        // Search conversations
-        if (includeConversations) {
-            const conversationResults = this.searchConversations(searchRegex);
-            results.push(...conversationResults);
-        }
+      if (includeExcerpts) {
+        results = await this.addExcerpts(results, query);
+      }
 
-        // Search files
-        if (includeFiles) {
-            const fileResults = await this.searchFiles(searchRegex);
-            results.push(...fileResults);
-        }
-
-        // Sort by score and limit results
-        return results
-            .sort((a, b) => b.score - a.score)
-            .slice(0, maxResults);
+      return results;
+    } catch (error) {
+      throw new SearchError(
+        'Search failed',
+        'SEARCH_ERROR',
+        error
+      );
     }
+  }
 
-    private searchConversations(regex: RegExp): SearchResult[] {
-        const results: SearchResult[] = [];
+  private async fuzzySearch(
+    query: string,
+    threshold: number,
+    limit: number
+  ): Promise<SearchResult[]> {
+    const files = this.plugin.app.vault.getMarkdownFiles();
+    
+    const fuseOptions = {
+      keys: ['basename', 'content'],
+      threshold,
+      includeScore: true,
+      limit
+    };
 
-        Object.values(this.plugin.conversations).forEach(conversation => {
-            conversation.messages.forEach(message => {
-                const matches = [...message.content.matchAll(regex)];
-                if (matches.length > 0) {
-                    results.push({
-                        type: 'message',
-                        content: this.getMessageExcerpt(message.content, matches[0].index || 0),
-                        score: this.calculateScore(matches, message.content),
-                        source: {
-                            id: conversation.id,
-                            title: conversation.title,
-                            timestamp: message.timestamp
-                        }
-                    });
-                }
-            });
-        });
+    const fuse = new Fuse(files, fuseOptions);
+    const searchResults = fuse.search(query);
 
-        return results;
-    }
+    return searchResults.map(result => ({
+      file: result.item,
+      content: result.item.basename,
+      score: result.score || 0
+    }));
+  }
 
-    private async searchFiles(regex: RegExp): Promise<SearchResult[]> {
-        const results: SearchResult[] = [];
-        const files = this.plugin.app.vault.getMarkdownFiles();
+  private async semanticSearch(
+    query: string,
+    limit: number
+  ): Promise<SearchResult[]> {
+    const files = this.plugin.app.vault.getMarkdownFiles();
+    const fileContents = await Promise.all(files.map(async (file) => ({
+      file,
+      content: await this.plugin.app.vault.read(file)
+    })));
 
-        for (const file of files) {
-            try {
-                const content = await this.plugin.app.vault.read(file);
-                const matches = [...content.matchAll(regex)];
-                
-                if (matches.length > 0) {
-                    results.push({
-                        type: 'file',
-                        content: this.getFileExcerpt(content, matches[0].index || 0),
-                        score: this.calculateScore(matches, content),
-                        source: {
-                            path: file.path,
-                            title: file.basename
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error(`Error searching file ${file.path}:`, error);
-            }
-        }
+    const queryEmbedding = await this.model.embed([query]);
+    const fileEmbeddings = await this.model.embed(fileContents.map(f => f.content));
 
-        return results;
-    }
+    const scores = tf.tidy(() => {
+      const queryTensor = tf.tensor(queryEmbedding);
+      const fileTensor = tf.tensor(fileEmbeddings);
+      return tf.dot(queryTensor, fileTensor.transpose()).dataSync();
+    });
 
-    private getMessageExcerpt(content: string, matchIndex: number, contextLength: number = 100): string {
-        const start = Math.max(0, matchIndex - contextLength);
-        const end = Math.min(content.length, matchIndex + contextLength);
-        let excerpt = content.slice(start, end);
-        
-        if (start > 0) excerpt = '...' + excerpt;
-        if (end < content.length) excerpt = excerpt + '...';
-        
-        return excerpt;
-    }
+    const sortedIndices = Array.from(scores)
+      .map((score, index) => ({ score, index }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(item => item.index);
 
-    private getFileExcerpt(content: string, matchIndex: number, contextLength: number = 100): string {
-        return this.getMessageExcerpt(content, matchIndex, contextLength);
-    }
+    return sortedIndices.map(index => ({
+      file: fileContents[index].file,
+      content: fileContents[index].content,
+      score: scores[index]
+    }));
+  }
 
-    private escapeRegExp(string: string): string {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    private calculateScore(matches: RegExpMatchArray[], content: string): number {
-        const baseScore = matches.length;
-        const density = matches.length / content.length;
-        return baseScore * (1 + density);
-    }
+  private async addExcerpts(results: SearchResult[], query: string): Promise<SearchResult[]> {
+    return Promise.all(results.map(async (result) => {
+      const content = await this.plugin.app.vault.read(result.file);
+      const fuse = new Fuse([{ content }], { keys: ['content'], threshold: 0.3, includeMatches: true });
+      const searchResult = fuse.search(query)[0];
+      if (searchResult && searchResult.matches) {
+        const match = searchResult.matches[0];
+        const start = Math.max(0, match.indices[0][0] - 50);
+        const end = Math.min(content.length, match.indices[0][1] + 50);
+        result.excerpt = content.slice(start, end);
+      }
+      return result;
+    }));
+  }
 }
+

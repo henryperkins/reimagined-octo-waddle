@@ -1,55 +1,50 @@
 import React from 'react';
+import { Button as ShadcnButton } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'default' | 'primary' | 'ghost';
-    size?: 'default' | 'sm' | 'lg';
-    isLoading?: boolean;
-    icon?: React.ReactNode;
-    children?: React.ReactNode;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  isLoading?: boolean;
+  loadingText?: string;
+  icon?: React.ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({
-    variant = 'default',
-    size = 'default',
-    isLoading = false,
-    icon,
-    children,
-    className = '',
-    disabled,
-    ...props
-}) => {
-    const baseClasses = 'button';
-    const variantClasses = {
-        default: 'button-default',
-        primary: 'button-primary',
-        ghost: 'button-ghost'
-    };
-    const sizeClasses = {
-        default: 'button-default-size',
-        sm: 'button-sm',
-        lg: 'button-lg'
-    };
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
+  children,
+  variant = 'default',
+  size = 'default',
+  isLoading = false,
+  loadingText,
+  icon,
+  className = '',
+  disabled,
+  ...props
+}, ref) => {
+  return (
+    <ShadcnButton
+      ref={ref}
+      variant={variant}
+      size={size}
+      disabled={isLoading || disabled}
+      className={`relative ${className}`}
+      {...props}
+    >
+      {isLoading ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          {loadingText || children}
+        </>
+      ) : (
+        <>
+          {icon && <span className="mr-2">{icon}</span>}
+          {children}
+        </>
+      )}
+    </ShadcnButton>
+  );
+});
 
-    const classes = [
-        baseClasses,
-        variantClasses[variant],
-        sizeClasses[size],
-        isLoading ? 'button-loading' : '',
-        className
-    ].filter(Boolean).join(' ');
+Button.displayName = 'Button';
 
-    return (
-        <button
-            className={classes}
-            disabled={isLoading || disabled}
-            {...props}
-        >
-            {isLoading ? (
-                <span className="loading-spinner" />
-            ) : icon ? (
-                <span className="button-icon">{icon}</span>
-            ) : null}
-            {children}
-        </button>
-    );
-};
+export { Button, type ButtonProps };

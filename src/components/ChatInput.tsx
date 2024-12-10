@@ -1,87 +1,100 @@
-import React from 'react';
-import { Button } from './Button';
-import { TextArea } from './TextArea';
+import React, { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Send, Paperclip } from 'lucide-react';
 
 interface ChatInputProps {
-    value: string;
-    onChange: (value: string) => void;
-    onSubmit: () => void;
-    onFileUpload?: (file: File) => void;
-    isLoading?: boolean;
-    placeholder?: string;
-    supportedFileTypes?: string[];
+  onSubmit: (message: string) => void;
+  onFileSelect?: (file: File) => void;
+  isLoading?: boolean;
+  placeholder?: string;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({
-    value,
-    onChange,
-    onSubmit,
-    onFileUpload,
-    isLoading = false,
-    placeholder = 'Type your message...',
-    supportedFileTypes = []
+const ChatInput: React.FC<ChatInputProps> = ({
+  onSubmit,
+  onFileSelect,
+  isLoading = false,
+  placeholder = 'Type a message...'
 }) => {
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [message, setMessage] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            if (value.trim() && !isLoading) {
-                onSubmit();
-            }
-        }
-    };
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  };
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file && onFileUpload) {
-            await onFileUpload(file);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-        }
-    };
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [message]);
 
-    return (
-        <div className="chat-input-container">
-            <form 
-                className="chat-input-form"
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    if (value.trim() && !isLoading) {
-                        onSubmit();
-                    }
-                }}
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (message.trim() && !isLoading) {
+      onSubmit(message);
+      setMessage('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onFileSelect) {
+      onFileSelect(file);
+      e.target.value = ''; // Reset input
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-end gap-2">
+      <div className="flex-1 relative">
+        <textarea
+          ref={textareaRef}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={isLoading}
+          className="w-full resize-none rounded-lg border border-gray-200 p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[48px] max-h-[200px]"
+          rows={1}
+        />
+        {onFileSelect && (
+          <>
+            <input
+              type="file"
+              id="file-input"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-2 bottom-2"
+              onClick={() => document.getElementById('file-input')?.click()}
             >
-                <TextArea
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder={placeholder}
-                    disabled={isLoading}
-                    className="chat-input"
-                />
-                <Button 
-                    type="submit" 
-                    disabled={!value.trim() || isLoading}
-                    title="Send message"
-                >
-                    📤
-                </Button>
-                {onFileUpload && (
-                    <label className="file-upload-label">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            accept={supportedFileTypes.join(',')}
-                            disabled={isLoading}
-                            style={{ display: 'none' }}
-                        />
-                        📎
-                    </label>
-                )}
-            </form>
-        </div>
-    );
+              <Paperclip className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+      </div>
+      <Button 
+        type="submit"
+        disabled={!message.trim() || isLoading}
+        className="h-12 px-4"
+      >
+        <Send className={`h-4 w-4 ${isLoading ? 'animate-pulse' : ''}`} />
+      </Button>
+    </form>
+  );
 };
+
+export default ChatInput;

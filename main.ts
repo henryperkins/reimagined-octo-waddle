@@ -1,210 +1,348 @@
-import { Plugin, WorkspaceLeaf, ItemView, TFile, Notice } from 'obsidian';
-import { AIChatView, VIEW_TYPE_CHAT } from './src/components/AIChatView';
+import { Plugin, Notice, addIcon, TFile } from 'obsidian';
+import { AIChatView } from './src/views/AIChatView';
 import { AIChatSettingsTab, DEFAULT_SETTINGS } from './src/settings/settings';
-import type {
-    AIChatSettings,
-    Conversation,
-    ChatMessage,
-    FileProcessingResult
-} from './src/types/types';
+import {
+  AIChatSettings,
+  Conversation,
+  ChatMessage,
+  FileProcessingResult
+} from './src/types';
 import { FileProcessingService } from './src/utils/fileProcessing';
 import { SummarizationService } from './src/utils/summarization';
 import { SearchService } from './src/utils/search';
-import { AIService } from './src/utils/aiInteraction';
+import { queryOpenAI } from './src/utils/aiInteraction';
+
+const CHAT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
+const VIEW_TYPE_AI_CHAT = 'ai-chat-view';
 
 export default class AIChatPlugin extends Plugin {
-    settings: AIChatSettings;
-    conversations: { [key: string]: Conversation } = {};
-    currentConversationId: string = '';
+  settings: AIChatSettings;
+  conversations: { [key: string]: Conversation } = {};
+  currentConversationId: string;
+  statusBarItem: HTMLElement;
+  tokenCount: number = 0;
+  
+  // Services
+  private fileProcessor: FileProcessingService;
+  private summarizer: SummarizationService;
+  private searchService: SearchService;
+
+  async onload() {
+    console.log('Loading AI Chat Plugin');
+
+    // Load settings
+    await this.loadSettings();
+
+    // Initialize services
+    this.fileProcessor = new FileProcessingService();
+    this.summarizer = new SummarizationService(this);
+    this.searchService = new SearchService(this);
+    await this.searchService.initialize();
+
+    // Register chat icon
+    addIcon('ai-chat', CHAT_ICON);
+
+    // Register view
+    this.registerView(
+      VIEW_TYPE_AI_CHAT,
+      (leaf) => new AIChatView(leaf, this)
+    );
+
+    // Add ribbon icon
+    this.addRibbonIcon('ai-chat', 'AI Chat', () => {
+      this.activateView();
+    });
+
+    // Add settings tab
+    this.addSettingTab(new AIChatSettingsTab(this.app, this));
+
+    // Initialize status bar
+    this.statusBarItem = this.addStatusBarItem();
+    this.updateStatusBar();
+
+    // Create default conversation
+    this.createConversation('Default Chat');
+
+    // Register commands
+    this.addCommands();
+
+    // Register event handlers
+    this.registerEventHandlers();
+  }
+
+  async onunload() {
+    console.log('Unloading AI Chat Plugin');
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE_AI_CHAT);
+  }
+
+  async loadSettings() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+  }
+
+  async saveSettings() {
+    await this.saveData(this.settings);
+  }
+
+  updateStatusBar() {
+    this.statusBarItem.setText(`AI Tokens: ${this.tokenCount}`);
+  }
+
+  showNotice(message: string, timeout: number = 4000) {
+    new Notice(message, timeout);
+  }
+
+  // View Management
+  async activateView() {
+    const workspace = this.app.workspace;
     
-    // Services
-    fileProcessingService: FileProcessingService;
-    summarizationService: SummarizationService;
-    searchService: SearchService;
-    aiService: AIService;
+    // Check if view already exists
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_AI_CHAT)[0];
+    
+    if (!leaf) {
+      // Create new leaf in right sidebar
+      leaf = workspace.getRightLeaf(false);
+      await leaf.setViewState({
+        type: VIEW_TYPE_AI_CHAT,
+        active: true,
+      });
+    }
 
-    async onload() {
-        await this.loadSettings();
+    // Reveal and focus leaf
+    workspace.revealLeaf(leaf);
+    workspace.setActiveLeaf(leaf, { focus: true });
+  }
 
-        // Initialize services
-        this.fileProcessingService = new FileProcessingService(this);
-        this.summarizationService = new SummarizationService(this);
-        this.searchService = new SearchService(this);
-        this.aiService = new AIService(this);
+  // Conversation Management
+  createConversation(title: string = 'New Chat'): Conversation {
+    const id = crypto.randomUUID();
+    const conversation: Conversation = {
+      id,
+      title,
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
 
-        this.registerView(
-            VIEW_TYPE_CHAT,
-            (leaf: WorkspaceLeaf) => new AIChatView(leaf, this)
-        );
+    this.conversations[id] = conversation;
+    this.currentConversationId = id;
+    return conversation;
+  }
 
-        this.addRibbonIcon('message-square', 'AI Chat', () => {
-            this.activateView();
+  getCurrentConversation(): Conversation {
+    return this.conversations[this.currentConversationId];
+  }
+
+  async addMessage(message: ChatMessage) {
+    const conversation = this.getCurrentConversation();
+    if (!conversation) {
+      throw new Error('No active conversation');
+    }
+
+    conversation.messages.push(message);
+    conversation.updatedAt = new Date();
+
+    if (this.settings.saveChatHistory) {
+      await this.saveChatHistory();
+    }
+  }
+
+  async deleteMessage(messageId: string) {
+    const conversation = this.getCurrentConversation();
+    if (!conversation) return;
+
+    conversation.messages = conversation.messages.filter(msg => msg.id !== messageId);
+    conversation.updatedAt = new Date();
+
+    if (this.settings.saveChatHistory) {
+      await this.saveChatHistory();
+    }
+  }
+
+  async clearConversation(id?: string) {
+    const conversationId = id || this.currentConversationId;
+    if (this.conversations[conversationId]) {
+      this.conversations[conversationId].messages = [];
+      this.conversations[conversationId].updatedAt = new Date();
+    }
+
+    if (this.settings.saveChatHistory) {
+      await this.saveChatHistory();
+    }
+  }
+
+  // Chat History Management
+  async saveChatHistory() {
+    const historyFile = `chat-history/${this.currentConversationId}.json`;
+    const history = JSON.stringify(this.getCurrentConversation(), null, 2);
+    
+    try {
+      await this.app.vault.adapter.write(historyFile, history);
+    } catch (error) {
+      console.error('Error saving chat history:', error);
+      this.showNotice('Error saving chat history');
+    }
+  }
+
+  async loadChatHistory() {
+    const historyFolder = 'chat-history';
+    try {
+      const files = await this.app.vault.adapter.list(historyFolder);
+      for (const file of files.files) {
+        const content = await this.app.vault.adapter.read(file);
+        const conversation = JSON.parse(content);
+        // Convert string dates back to Date objects
+        conversation.createdAt = new Date(conversation.createdAt);
+        conversation.updatedAt = new Date(conversation.updatedAt);
+        conversation.messages.forEach((msg: ChatMessage) => {
+          msg.timestamp = new Date(msg.timestamp);
         });
-
-        this.addSettingTab(new AIChatSettingsTab(this.app, this));
-
-        // Register the file menu event with proper typing
-        this.registerEvent(
-            // @ts-ignore - Obsidian's type definitions are incomplete
-            this.app.workspace.on('file-menu', (menu, file: TFile) => {
-                menu.addItem((item) => {
-                    item
-                        .setTitle('Summarize with AI')
-                        .setIcon('bot')
-                        .onClick(async () => {
-                            await this.summarizeFile(file);
-                        });
-                });
-            })
-        );
-    }
-
-    async activateView() {
-        const { workspace } = this.app;
-        
-        let leaf = workspace.getLeavesOfType(VIEW_TYPE_CHAT)[0];
-        
-        if (!leaf) {
-            const newLeaf = workspace.getRightLeaf(false);
-            if (newLeaf) {
-                await newLeaf.setViewState({
-                    type: VIEW_TYPE_CHAT,
-                    active: true,
-                });
-                leaf = newLeaf;
-            }
-        }
-
-        if (leaf) {
-            workspace.revealLeaf(leaf);
-        }
-    }
-
-    async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    }
-
-    async saveSettings() {
-        await this.saveData(this.settings);
-    }
-
-    createConversation(title?: string): Conversation {
-        const conversation: Conversation = {
-            id: Date.now().toString(),
-            title: title || 'New Conversation',
-            messages: [],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
         this.conversations[conversation.id] = conversation;
-        if (!this.currentConversationId) {
-            this.currentConversationId = conversation.id;
-        }
-        return conversation;
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+      this.showNotice('Error loading chat history');
+    }
+  }
+
+  async exportChatHistory() {
+    const conversation = this.getCurrentConversation();
+    if (!conversation.messages.length) {
+      this.showNotice('No messages to export');
+      return;
     }
 
-    getCurrentConversation(): Conversation {
-        return this.conversations[this.currentConversationId];
+    const fileName = `chat-export-${new Date().toISOString().slice(0, 10)}.md`;
+    const content = conversation.messages.map(msg => {
+      return `## ${msg.role} (${msg.timestamp.toLocaleString()})\n${msg.content}\n`;
+    }).join('\n');
+
+    try {
+      await this.app.vault.create(fileName, content);
+      this.showNotice('Chat history exported successfully');
+    } catch (error) {
+      console.error('Error exporting chat history:', error);
+      this.showNotice('Error exporting chat history');
     }
+  }
 
-    async addMessage(message: ChatMessage): Promise<void> {
-        const conversation = this.getCurrentConversation();
-        if (conversation) {
-            conversation.messages.push(message);
-            conversation.updatedAt = new Date();
-        }
+  // File Processing
+  async handleFileUpload(file: File): Promise<FileProcessingResult> {
+    try {
+      // Validate file
+      if (!this.settings.supportedFileTypes.includes(`.${file.name.split('.').pop()}`)) {
+        throw new Error('Unsupported file type');
+      }
+
+      if (file.size > this.settings.fileUploadLimit * 1024 * 1024) {
+        throw new Error('File size exceeds limit');
+      }
+
+      // Process file
+      const content = await this.fileProcessor.processFile(file);
+      const filePath = await this.saveFileToVault(file);
+      
+      return {
+        success: true,
+        message: 'File processed successfully',
+        filePath
+      };
+    } catch (error) {
+      console.error('Error processing file:', error);
+      return {
+        success: false,
+        message: error.message
+      };
     }
+  }
 
-    async deleteMessage(messageId: string): Promise<void> {
-        const conversation = this.getCurrentConversation();
-        if (!conversation) return;
-
-        conversation.messages = conversation.messages.filter((msg: ChatMessage) => msg.id !== messageId);
-        conversation.updatedAt = new Date();
-
-        if (this.settings.saveChatHistory) {
-            await this.saveChatHistory();
-        }
+  async saveFileToVault(file: File): Promise<string> {
+    const filePath = `uploads/${file.name}`;
+    const content = await file.text();
+    
+    try {
+      const existingFile = this.app.vault.getAbstractFileByPath(filePath);
+      if (existingFile instanceof TFile) {
+        await this.app.vault.modify(existingFile, content);
+      } else {
+        await this.app.vault.create(filePath, content);
+      }
+      return filePath;
+    } catch (error) {
+      console.error('Error saving file:', error);
+      throw new Error('Failed to save file to vault');
     }
+  }
 
-    async handleFileUpload(file: File): Promise<FileProcessingResult> {
-        return this.fileProcessingService.processFile(file);
-    }
+  // Search and Context
+  async retrieveRelevantNotes(query: string) {
+    return await this.searchService.search(query, {
+      maxResults: this.settings.maxContextSize,
+      semanticSearch: this.settings.useSemanticSearch
+    });
+  }
 
-    async saveFileToVault(filename: string, content: string): Promise<string> {
-        const path = `uploads/${filename}`;
-        await this.app.vault.adapter.write(path, content);
-        return path;
-    }
+  async summarizeText(text: string) {
+    return await this.summarizer.summarizeText(text, {
+      maxLength: this.settings.maxContextSize
+    });
+  }
 
-    async getAIResponse(message: string): Promise<string> {
-        return this.aiService.getResponse(message);
-    }
+  async summarizeNotes(notes: string[]) {
+    return await this.summarizer.summarizeNotes(notes);
+  }
 
-    async summarizeFile(file: TFile) {
-        const content = await this.app.vault.read(file);
-        const summary = await this.summarizationService.summarize(content);
-        
-        const conversation = this.createConversation(`Summary of ${file.name}`);
-        await this.addMessage({
-            id: Date.now().toString(),
-            role: 'system',
-            content: `Summarizing file: ${file.name}`,
-            timestamp: new Date(),
+  // Commands
+  private addCommands() {
+    // Open chat
+    this.addCommand({
+      id: 'open-ai-chat',
+      name: 'Open AI Chat',
+      callback: () => this.activateView()
+    });
+
+    // Create new conversation
+    this.addCommand({
+      id: 'new-conversation',
+      name: 'Create New Conversation',
+      callback: () => this.createConversation()
+    });
+
+    // Clear current conversation
+    this.addCommand({
+      id: 'clear-conversation',
+      name: 'Clear Current Conversation',
+      callback: () => this.clearConversation()
+    });
+
+    // Export chat history
+    this.addCommand({
+      id: 'export-chat-history',
+      name: 'Export Chat History',
+      callback: () => this.exportChatHistory()
+    });
+  }
+
+  // Event Handlers
+  private registerEventHandlers() {
+    // Handle theme changes
+    this.registerEvent(
+      this.app.workspace.on('css-change', () => {
+        const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_AI_CHAT);
+        leaves.forEach(leaf => {
+          if (leaf.view instanceof AIChatView) {
+            leaf.view.applyTheme();
+          }
         });
-        await this.addMessage({
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: summary,
-            timestamp: new Date(),
-        });
+      })
+    );
 
-        await this.activateView();
+    // Auto-save chat history
+    if (this.settings.saveChatHistory) {
+      this.registerInterval(
+        window.setInterval(() => {
+          this.saveChatHistory();
+        }, 5 * 60 * 1000) // Save every 5 minutes
+      );
     }
-
-    async exportChatHistory() {
-        const conversation = this.getCurrentConversation();
-        if (!conversation.messages.length) {
-            this.showNotice('No messages to export');
-            return;
-        }
-
-        const fileName = `chat-export-${new Date().toISOString().slice(0, 10)}.md`;
-        const content = conversation.messages.map((msg: ChatMessage) => {
-            return `## ${msg.role} (${msg.timestamp.toLocaleString()})\n${msg.content}\n`;
-        }).join('\n');
-
-        try {
-            await this.app.vault.create(fileName, content);
-            this.showNotice('Chat history exported successfully');
-        } catch (error) {
-            console.error('Error exporting chat history:', error);
-            this.showNotice('Error exporting chat history');
-        }
-    }
-
-    async saveChatHistory() {
-        // Implement the logic to save chat history
-        // This is a placeholder implementation
-        console.log('Chat history saved');
-    }
-
-    showNotice(message: string) {
-        new Notice(message);
-    }
-
-    onunload() {
-        this.app.workspace.detachLeavesOfType(VIEW_TYPE_CHAT);
-    }
-
-    private registerEventHandlers() {
-        // Auto-save chat history
-        if (this.settings.saveChatHistory) {
-            this.registerInterval(
-                window.setInterval(() => {
-                    this.saveChatHistory();
-                }, 5 * 60 * 1000) // Save every 5 minutes
-            );
-        }
-    }
+  }
 }
