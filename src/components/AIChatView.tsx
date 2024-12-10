@@ -1,6 +1,10 @@
 import React, { createContext, useContext } from 'react';
 import { ItemView, WorkspaceLeaf, App } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
+import type AIChatPlugin from '../main';
+import { ChatView } from './ChatView';
+import { SearchView } from './SearchView';
+import { ConversationList } from './ConversationList';
 
 // Create App Context
 const ObsidianContext = createContext<App | undefined>(undefined);
@@ -14,33 +18,59 @@ export const useObsidian = () => {
   return context;
 };
 
-interface ChatViewProps {
-  plugin: any; // Replace with your plugin type
+interface MainViewProps {
+  plugin: AIChatPlugin;
 }
 
-// Main Chat Component
-const ChatView: React.FC<ChatViewProps> = ({ plugin }) => {
+// Main View Component
+const MainView: React.FC<MainViewProps> = ({ plugin }) => {
+  const [showSearch, setShowSearch] = React.useState(false);
   const app = useObsidian();
   
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-grow overflow-y-auto p-4">
-        {/* Chat messages will go here */}
-      </div>
-      <div className="border-t p-4">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            className="flex-grow p-2 rounded border"
-            placeholder="Type your message..."
+    <div className="app">
+      <div className="flex h-full">
+        <ConversationList
+          conversations={plugin.conversations}
+          currentId={plugin.currentConversationId}
+          onSelect={(id) => {
+            plugin.currentConversationId = id;
+          }}
+          onDelete={async (id) => {
+            delete plugin.conversations[id];
+            if (plugin.currentConversationId === id) {
+              const conversationIds = Object.keys(plugin.conversations);
+              plugin.currentConversationId = conversationIds[0] || '';
+            }
+          }}
+          onNew={() => {
+            plugin.createConversation();
+          }}
+          onRename={(id, newTitle) => {
+            if (plugin.conversations[id]) {
+              plugin.conversations[id].title = newTitle;
+            }
+          }}
+        />
+        
+        <div className="flex-grow">
+          <ChatView
+            plugin={plugin}
+            onSearchOpen={() => setShowSearch(true)}
           />
-          <button
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Send
-          </button>
         </div>
       </div>
+
+      {showSearch && (
+        <SearchView
+          plugin={plugin}
+          onResultClick={(result) => {
+            // Handle search result click
+            setShowSearch(false);
+          }}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
     </div>
   );
 };
@@ -50,9 +80,9 @@ export const VIEW_TYPE_CHAT = 'ai-chat-view';
 
 export class AIChatView extends ItemView {
   root: Root | null = null;
-  plugin: any; // Replace with your plugin type
+  plugin: AIChatPlugin;
 
-  constructor(leaf: WorkspaceLeaf, plugin: any) {
+  constructor(leaf: WorkspaceLeaf, plugin: AIChatPlugin) {
     super(leaf);
     this.plugin = plugin;
   }
@@ -69,7 +99,7 @@ export class AIChatView extends ItemView {
     this.root = createRoot(this.containerEl.children[1]);
     this.root.render(
       <ObsidianContext.Provider value={this.app}>
-        <ChatView plugin={this.plugin} />
+        <MainView plugin={this.plugin} />
       </ObsidianContext.Provider>
     );
   }

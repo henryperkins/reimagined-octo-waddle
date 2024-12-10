@@ -1,13 +1,11 @@
-import type { TFile } from 'obsidian';
-import type { Conversation, SearchResult, SearchOptions } from '../types/index';
+import type AIChatPlugin from '../main';
+import type { SearchResult, SearchOptions } from '../types';
 
 export class SearchService {
-    private app: any;
-    private conversations: { [key: string]: Conversation };
+    private plugin: AIChatPlugin;
 
-    constructor(app: any, conversations: { [key: string]: Conversation }) {
-        this.app = app;
-        this.conversations = conversations;
+    constructor(plugin: AIChatPlugin) {
+        this.plugin = plugin;
     }
 
     async search(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
@@ -47,14 +45,14 @@ export class SearchService {
     private searchConversations(regex: RegExp): SearchResult[] {
         const results: SearchResult[] = [];
 
-        Object.values(this.conversations).forEach(conversation => {
+        Object.values(this.plugin.conversations).forEach(conversation => {
             conversation.messages.forEach(message => {
                 const matches = [...message.content.matchAll(regex)];
                 if (matches.length > 0) {
                     results.push({
                         type: 'message',
                         content: this.getMessageExcerpt(message.content, matches[0].index || 0),
-                        score: matches.length,
+                        score: this.calculateScore(matches, message.content),
                         source: {
                             id: conversation.id,
                             title: conversation.title,
@@ -70,18 +68,18 @@ export class SearchService {
 
     private async searchFiles(regex: RegExp): Promise<SearchResult[]> {
         const results: SearchResult[] = [];
-        const files = this.app.vault.getMarkdownFiles();
+        const files = this.plugin.app.vault.getMarkdownFiles();
 
         for (const file of files) {
             try {
-                const content = await this.app.vault.read(file);
+                const content = await this.plugin.app.vault.read(file);
                 const matches = [...content.matchAll(regex)];
                 
                 if (matches.length > 0) {
                     results.push({
                         type: 'file',
                         content: this.getFileExcerpt(content, matches[0].index || 0),
-                        score: matches.length,
+                        score: this.calculateScore(matches, content),
                         source: {
                             path: file.path,
                             title: file.basename
@@ -115,17 +113,6 @@ export class SearchService {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    // Helper method to get conversation by message
-    getConversationByMessage(messageId: string): Conversation | null {
-        for (const conversation of Object.values(this.conversations)) {
-            if (conversation.messages.some(msg => msg.id === messageId)) {
-                return conversation;
-            }
-        }
-        return null;
-    }
-
-    // Helper method to calculate search score
     private calculateScore(matches: RegExpMatchArray[], content: string): number {
         const baseScore = matches.length;
         const density = matches.length / content.length;

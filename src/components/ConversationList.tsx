@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import type { Conversation } from '../types';
+import { Card, CardHeader, CardContent } from './Card';
+import { Button } from './Button';
+import { Input } from './Input';
 
 interface ConversationListProps {
     conversations: { [key: string]: Conversation };
@@ -58,27 +61,30 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     };
 
     return (
-        <div className="conversation-list">
-            <div className="conversation-list-header">
-                <h3>Conversations</h3>
-                <button 
-                    className="new-conversation-button"
-                    onClick={onNew}
-                    title="New conversation"
-                >
-                    +
-                </button>
-            </div>
-            <div className="conversation-items">
+        <Card className="conversation-list">
+            <CardHeader>
+                <div className="conversation-list-header">
+                    <h3>Conversations</h3>
+                    <Button
+                        variant="ghost"
+                        onClick={onNew}
+                        title="New conversation"
+                        className="new-conversation-button"
+                    >
+                        +
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent className="conversation-items">
                 {sortedConversations.map((conv) => (
-                    <div
+                    <Card
                         key={conv.id}
                         className={`conversation-item ${conv.id === currentId ? 'active' : ''}`}
                         onClick={() => onSelect(conv.id)}
                     >
-                        <div className="conversation-item-content">
+                        <CardContent className="conversation-item-content">
                             {editingId === conv.id ? (
-                                <input
+                                <Input
                                     type="text"
                                     value={editTitle}
                                     onChange={(e) => setEditTitle(e.target.value)}
@@ -102,22 +108,23 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                             <div className="conversation-preview">
                                 {conv.messages[conv.messages.length - 1]?.content.slice(0, 50) || 'No messages'}
                             </div>
-                        </div>
+                        </CardContent>
                         {conv.id !== currentId && (
-                            <button
-                                className="delete-conversation"
+                            <Button
+                                variant="ghost"
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onDelete(conv.id);
                                 }}
                                 title="Delete conversation"
+                                className="delete-conversation"
                             >
                                 ×
-                            </button>
+                            </Button>
                         )}
-                    </div>
+                    </Card>
                 ))}
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 };

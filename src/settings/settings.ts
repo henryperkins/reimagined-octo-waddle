@@ -1,15 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type AIChatPlugin from '../main';
-
-export interface AIChatSettings {
-    apiKey: string;
-    modelName: string;
-    temperature: number;
-    maxTokens: number;
-    supportedFileTypes: string[];
-    maxFileSize: number;
-    saveChatHistory: boolean;
-}
+import { AIChatSettings } from '../types';
 
 export const DEFAULT_SETTINGS: AIChatSettings = {
     apiKey: '',
@@ -94,6 +85,34 @@ export class AIChatSettingsTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.saveChatHistory)
                 .onChange(async (value) => {
                     this.plugin.settings.saveChatHistory = value;
+                    await this.plugin.saveSettings();
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Max File Size')
+            .setDesc('Maximum file size in MB for uploads')
+            .addText(text => text
+                .setValue(String(this.plugin.settings.maxFileSize))
+                .onChange(async (value) => {
+                    const size = parseInt(value);
+                    if (!isNaN(size) && size > 0) {
+                        this.plugin.settings.maxFileSize = size;
+                        await this.plugin.saveSettings();
+                    }
+                })
+            );
+
+        new Setting(containerEl)
+            .setName('Supported File Types')
+            .setDesc('Comma-separated list of supported file extensions (e.g., .txt,.md,.pdf)')
+            .addText(text => text
+                .setValue(this.plugin.settings.supportedFileTypes.join(','))
+                .onChange(async (value) => {
+                    this.plugin.settings.supportedFileTypes = value
+                        .split(',')
+                        .map(t => t.trim())
+                        .filter(Boolean);
                     await this.plugin.saveSettings();
                 })
             );
