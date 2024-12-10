@@ -42,6 +42,7 @@ export interface ChatMessage {
     context?: string;
     sourceFile?: string;
   };
+  editMessage?: (newContent: string) => void;
 }
 
 export interface Conversation {
@@ -111,6 +112,7 @@ export interface AIChatPlugin extends Plugin {
   getCurrentConversation(): Conversation;
   addMessage(message: ChatMessage): Promise<void>;
   clearConversation(id?: string): Promise<void>;
+  editMessage(messageId: string, newContent: string): Promise<void>;
   
   // File Management
   handleFileUpload(file: File): Promise<FileProcessingResult>;
