@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type AIChatPlugin from '../../main';
-import { ChatMessage } from './ChatMessage';
-import { Button } from './Button';
-import { Input } from './Input';
-import { Card, CardHeader, CardContent } from './Card';
+import { 
+    Button, 
+    Input, 
+    Card, 
+    CardHeader, 
+    CardContent,
+    ChatMessage 
+} from './';
 import type { ChatMessage as ChatMessageType } from '../types';
 
 interface ChatViewProps {
