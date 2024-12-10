@@ -15,6 +15,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,6 +26,21 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
     useEffect(() => {
         scrollToBottom();
     }, [plugin.getCurrentConversation()?.messages]);
+
+    useEffect(() => {
+        const ws = new WebSocket('ws://localhost:8080');
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'typing') {
+                setIsTyping(data.isTyping);
+            } else if (data.type === 'message') {
+                plugin.addMessage(data.message);
+            }
+        };
+        return () => {
+            ws.close();
+        };
+    }, [plugin]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -98,6 +114,15 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
         }
     };
 
+    const handleEditMessage = async (messageId: string, newContent: string) => {
+        try {
+            await plugin.editMessage(messageId, newContent);
+        } catch (error) {
+            console.error('Error editing message:', error);
+            setError('An error occurred while editing the message. Please try again.');
+        }
+    };
+
     const conversation = plugin.getCurrentConversation();
 
     return (
@@ -126,6 +151,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
                                 ? () => plugin.deleteMessage(msg.id)
                                 : undefined
                         }
+                        onEdit={
+                            msg.role === 'user'
+                                ? (newContent) => handleEditMessage(msg.id, newContent)
+                                : undefined
+                        }
                     />
                 ))}
                 {error && (
@@ -137,6 +167,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
                 {isLoading && (
                     <div className="loading-message">
                         Processing...
+                    </div>
+                )}
+                {isTyping && (
+                    <div className="typing-indicator">
+                        AI is typing...
                     </div>
                 )}
             </CardContent>

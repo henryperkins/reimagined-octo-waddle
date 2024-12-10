@@ -6,9 +6,10 @@ import type { ChatMessage as ChatMessageType } from '../types';
 interface ChatMessageProps {
     message: ChatMessageType;
     onDelete?: () => void;
+    onEdit?: (newContent: string) => void;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete, onEdit }) => {
     const isUser = message.role === 'user';
     
     const handleCopy = async () => {
@@ -17,6 +18,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete }) =
             // Could add a toast notification here
         } catch (error) {
             console.error('Failed to copy message:', error);
+        }
+    };
+
+    const handleEdit = async () => {
+        if (!onEdit) return;
+        const newContent = prompt('Edit message:', message.content);
+        if (newContent && newContent !== message.content) {
+            await onEdit(newContent);
         }
     };
 
@@ -38,6 +47,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onDelete }) =
                         >
                             📋
                         </Button>
+                        {isUser && onEdit && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleEdit}
+                                title="Edit message"
+                                className="message-action-button edit"
+                            >
+                                ✏️
+                            </Button>
+                        )}
                         {isUser && onDelete && (
                             <Button
                                 variant="ghost"

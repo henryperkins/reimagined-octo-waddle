@@ -138,11 +138,34 @@ export default class AIChatPlugin extends Plugin {
       throw new Error('No active conversation');
     }
 
-    conversation.messages.push(message);
+    const existingMessageIndex = conversation.messages.findIndex(msg => msg.id === message.id);
+    if (existingMessageIndex !== -1) {
+      // Update existing message
+      conversation.messages[existingMessageIndex] = message;
+    } else {
+      // Add new message
+      conversation.messages.push(message);
+    }
     conversation.updatedAt = new Date();
 
     if (this.settings.saveChatHistory) {
       await this.saveChatHistory();
+    }
+  }
+
+  async editMessage(messageId: string, newContent: string) {
+    const conversation = this.getCurrentConversation();
+    if (!conversation) return;
+
+    const message = conversation.messages.find(msg => msg.id === messageId);
+    if (message) {
+      message.content = newContent;
+      message.timestamp = new Date();
+      conversation.updatedAt = new Date();
+
+      if (this.settings.saveChatHistory) {
+        await this.saveChatHistory();
+      }
     }
   }
 
