@@ -1,11 +1,12 @@
 import { Plugin, Notice, addIcon, TFile } from 'obsidian';
-import { AIChatView } from './src/views/AIChatView';
+import { AIChatView } from './src/ui';
 import { AIChatSettingsTab, DEFAULT_SETTINGS } from './src/settings/settings';
-import {
+import { 
   AIChatSettings,
   Conversation,
   ChatMessage,
-  FileProcessingResult
+  FileProcessingResult,
+  SearchResult
 } from './src/types';
 import { FileProcessingService } from './src/utils/fileProcessing';
 import { SummarizationService } from './src/utils/summarization';
