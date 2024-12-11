@@ -1,20 +1,20 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from './Button';
-import { Copy, Trash2, Edit, ExternalLink } from 'lucide-react';
-import { ChatMessage as ChatMessageType } from '../types';
-import { ConfirmModal } from './Modal';
+import { Message } from '@/types';
 
 interface ChatMessageProps {
-  message: ChatMessageType;
-  onDelete?: () => Promise<void>;
-  onEdit?: (newContent: string) => Promise<void>;
+  message: Message;
 }
 
-const ChatMessage = memo(({ message, onDelete, onEdit }: ChatMessageProps) => {
-  const { role, content, timestamp, metadata } = message;
-
-  const copyToClipboard = async () => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+  return (
+    <Card>
+      <div className="message-content">
+        {message.content}
+      </div>
+    </Card>
+  );
+};
     try {
       await navigator.clipboard.writeText(content);
       // Could use Obsidian's Notice here if we had access to the app

@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-<<<<<<< HEAD
 import type AIChatPlugin from '../../main';
 import { 
     Button, 
@@ -10,13 +9,6 @@ import {
     ChatMessage 
 } from './';
 import type { ChatMessage as ChatMessageType } from '../types';
-=======
-import ChatMessage from './ChatMessage';
-import { Button } from './Button';
-import { Input } from './Input';
-import { Card, CardHeader, CardContent } from './Card';
-import type { AIChatPluginInterface as AIChatPlugin, ChatMessage as ChatMessageType } from '../types';
->>>>>>> 6a7043a5ccbc622de2f1bf4502417cb87c74a39d
 
 interface ChatViewProps {
     plugin: AIChatPlugin;

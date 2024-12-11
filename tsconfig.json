@@ -22,15 +22,11 @@
       "ES7"
     ],
     "paths": {
-<<<<<<< HEAD
-      "@/*": ["src/*"],
+      "*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@utils/*": ["src/utils/*"],
       "@types/*": ["src/types/*"],
       "@lib/*": ["src/lib/*"]
-=======
-      "*": ["./src/*"]
->>>>>>> 6a7043a5ccbc622de2f1bf4502417cb87c74a39d
     }
   },
   "include": [

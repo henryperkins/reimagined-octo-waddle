@@ -1,23 +1,12 @@
-<<<<<<< HEAD
-import { Plugin, Notice, addIcon, TFile } from 'obsidian';
-import { AIChatView } from './src/ui';
-import { AIChatSettingsTab, DEFAULT_SETTINGS } from './src/settings/settings';
-import { 
-=======
 import { Plugin, Notice, addIcon, TFile, WorkspaceLeaf, App, PluginSettingTab } from 'obsidian';
 import { ChatView } from './src/components/ChatView';
 import SettingsBox from './src/components/SettingsBox';
 import {
->>>>>>> 6a7043a5ccbc622de2f1bf4502417cb87c74a39d
   AIChatSettings,
   Conversation,
   ChatMessage,
   FileProcessingResult,
-<<<<<<< HEAD
-  SearchResult
-=======
   AIChatPluginInterface
->>>>>>> 6a7043a5ccbc622de2f1bf4502417cb87c74a39d
 } from './src/types';
 import { ObsidianChatView } from './src/views/ObsidianChatView';
 import { FileProcessingService } from './src/utils/fileProcessing';
