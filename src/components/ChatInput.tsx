@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from './Button';
 import { Send, Paperclip } from 'lucide-react';
 
 interface ChatInputProps {
@@ -68,11 +68,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
         />
         {onFileSelect && (
           <>
+            <label htmlFor="file-input" className="sr-only">Upload file</label>
             <input
               type="file"
               id="file-input"
               className="hidden"
               onChange={handleFileChange}
+              aria-label="Upload file"
+              title="Upload file"
             />
             <Button
               type="button"
@@ -86,7 +89,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </>
         )}
       </div>
-      <Button 
+      <Button
         type="submit"
         disabled={!message.trim() || isLoading}
         className="h-12 px-4"

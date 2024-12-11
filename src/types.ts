@@ -1,5 +1,4 @@
 import { App, Plugin } from 'obsidian';
-import { SearchResult } from '@/utils/search';
 
 export interface ModelParameters {
   temperature: number;
@@ -41,9 +40,13 @@ export interface Conversation {
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  metadata?: {
+    tokenCount?: number;
+    sourceFile?: string;
+  };
 }
 
 export interface FileProcessingResult {
@@ -63,8 +66,26 @@ export interface SummarizeOptions {
 
 export interface AIChatPluginInterface extends Plugin {
   settings: AIChatSettings;
-  saveSettings(): Promise<void>;
+  saveSettings(settings: AIChatSettings): Promise<void>;
   summarizeText(text: string, options: SummarizeOptions): Promise<string>;
   summarizeNotes(notes: string[]): Promise<string[]>;
   retrieveRelevantNotes(query: string): Promise<SearchResult[]>;
+  getCurrentConversation(): Conversation | null;
+  clearConversation(): Promise<void>;
+  exportChatHistory(): Promise<void>;
+  deleteMessage(id: string): Promise<void>;
+  getAIResponse(message: string): Promise<string>;
+  addMessage(message: ChatMessage): Promise<void>;
+  handleFileUpload(file: File): Promise<FileProcessingResult>;
+}
+
+export interface SearchResult {
+  path: string;
+  score: number;
+  content: string;
+}
+
+export interface SettingsBoxProps {
+  plugin: AIChatPluginInterface;
+  onSettingsChange: (settings: AIChatSettings) => Promise<void>;
 }

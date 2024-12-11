@@ -1,27 +1,83 @@
-import { Plugin, Notice, addIcon, TFile, WorkspaceLeaf, App } from 'obsidian';
-import { AIChatView } from '@/components/AIChatView';
-import { AIChatSettingsTab, DEFAULT_SETTINGS } from '@/settings/settings';
+import { Plugin, Notice, addIcon, TFile, WorkspaceLeaf, App, PluginSettingTab } from 'obsidian';
+import { ChatView } from './src/components/ChatView';
+import SettingsBox from './src/components/SettingsBox';
 import {
   AIChatSettings,
   Conversation,
   ChatMessage,
-  FileProcessingResult
-} from '@/types';
-import { FileProcessingService } from '@/utils/fileProcessing';
-import { SummarizationService } from '@/utils/summarization';
-import { SearchService } from '@/utils/search';
-import { queryOpenAI } from '@/utils/aiInteraction';
+  FileProcessingResult,
+  AIChatPluginInterface
+} from './src/types';
+import { ObsidianChatView } from './src/views/ObsidianChatView';
+import { FileProcessingService } from './src/utils/fileProcessing';
+import { SummarizationService } from './src/utils/summarization';
+import { SearchService } from './src/utils/search';
+import { handleUserQuery } from './src/utils/aiInteraction';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
 const CHAT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`;
 const VIEW_TYPE_AI_CHAT = 'ai-chat-view';
 
-export default class AIChatPlugin extends Plugin {
+const DEFAULT_SETTINGS: AIChatSettings = {
+  apiKey: '',
+  modelName: 'gpt-4',
+  modelParameters: {
+    temperature: 0.7,
+    maxTokens: 2048,
+    topP: 1
+  },
+  chatFontSize: '14px',
+  chatColorScheme: 'light',
+  chatLayout: 'default',
+  enableChatHistory: true,
+  defaultPrompt: '',
+  contextWindowSize: 4096,
+  saveChatHistory: true,
+  loadChatHistory: true,
+  searchChatHistory: true,
+  deleteMessageFromHistory: true,
+  clearChatHistory: true,
+  exportChatHistory: true,
+  fileUploadLimit: 10,
+  supportedFileTypes: ['.txt', '.md', '.pdf', '.csv'],
+  contextIntegrationMethod: 'full',
+  maxContextSize: 4096,
+  useSemanticSearch: true,
+  theme: 'light'
+};
+
+export class AIChatSettingsTab extends PluginSettingTab {
+  plugin: AIChatPlugin;
+
+  constructor(app: App, plugin: AIChatPlugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+
+  display(): void {
+    const { containerEl } = this;
+    containerEl.empty();
+
+    const settingsBox = React.createElement(SettingsBox, {
+      plugin: this.plugin,
+      onSettingsChange: async (settings) => {
+        this.plugin.settings = settings;
+        await this.plugin.saveSettings();
+      }
+    });
+    const root = ReactDOM.createRoot(containerEl);
+    root.render(settingsBox);
+  }
+}
+
+export default class AIChatPlugin extends Plugin implements AIChatPluginInterface {
   settings: AIChatSettings = DEFAULT_SETTINGS;
   conversations: { [key: string]: Conversation } = {};
   currentConversationId: string = '';
   statusBarItem!: HTMLElement;
   tokenCount: number = 0;
-  
+
   // Services
   private fileProcessor: FileProcessingService = new FileProcessingService();
   private summarizer: SummarizationService;
@@ -31,6 +87,10 @@ export default class AIChatPlugin extends Plugin {
     super(app, manifest);
     this.summarizer = new SummarizationService(this);
     this.searchService = new SearchService(this);
+  }
+
+  async getAIResponse(message: string): Promise<string> {
+    return await handleUserQuery(this, message);
   }
 
   async deleteConversation(id: string) {
@@ -61,7 +121,16 @@ export default class AIChatPlugin extends Plugin {
     // Register view
     this.registerView(
       VIEW_TYPE_AI_CHAT,
-      (leaf) => new AIChatView(leaf, this)
+      (leaf) => {
+        const view = new ChatView({
+          plugin: this,
+          onSearchOpen: () => {
+            // Handle search open
+            console.log('Search opened');
+          }
+        });
+        return view;
+      }
     );
 
     // Add ribbon icon
@@ -110,10 +179,10 @@ export default class AIChatPlugin extends Plugin {
   // View Management
   async activateView() {
     const workspace = this.app.workspace;
-    
+
     // Check if view already exists
     let leaf = workspace.getLeavesOfType(VIEW_TYPE_AI_CHAT)[0];
-    
+
     if (!leaf) {
       // Create new leaf in right sidebar
       const rightLeaf = workspace.getRightLeaf(false);
@@ -195,7 +264,7 @@ export default class AIChatPlugin extends Plugin {
   async saveChatHistory() {
     const historyFile = `chat-history/${this.currentConversationId}.json`;
     const history = JSON.stringify(this.getCurrentConversation(), null, 2);
-    
+
     try {
       await this.app.vault.adapter.write(historyFile, history);
     } catch (error) {
@@ -265,7 +334,7 @@ export default class AIChatPlugin extends Plugin {
       // Process file
       const content = await this.fileProcessor.processFile(file);
       const filePath = await this.saveFileToVault(file);
-      
+
       return {
         message: 'File processed successfully',
         filePath
@@ -281,7 +350,7 @@ export default class AIChatPlugin extends Plugin {
   async saveFileToVault(file: File): Promise<string> {
     const filePath = `uploads/${file.name}`;
     const content = await file.text();
-    
+
     try {
       const existingFile = this.app.vault.getAbstractFileByPath(filePath);
       if (existingFile instanceof TFile) {
@@ -352,8 +421,8 @@ export default class AIChatPlugin extends Plugin {
       this.app.workspace.on('css-change', () => {
         const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_AI_CHAT);
         leaves.forEach(leaf => {
-          if (leaf.view instanceof AIChatView) {
-            leaf.view.applyTheme();
+          if (leaf.view instanceof ChatView) {
+            (leaf.view as any).applyTheme();
           }
         });
       })

@@ -29,7 +29,7 @@ export const Input: React.FC<InputProps> = ({
             <input
                 id={inputId}
                 className={classes}
-                aria-invalid={!!error}
+                aria-invalid={error ? "true" : "false"}
                 aria-describedby={
                     error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
                 }
@@ -47,4 +47,4 @@ export const Input: React.FC<InputProps> = ({
             )}
         </div>
     );
-};
+}

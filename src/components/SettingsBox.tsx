@@ -1,60 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { useApp } from './context';
+import React, { useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Slider } from './ui/slider';
+import { Switch } from './ui/switch';
+import { Button } from './ui/button';
 import { Notice } from 'obsidian';
+import type { SettingsBoxProps, AIChatSettings } from '../types';
 
-interface AISettings {
-  apiKey: string;
-  modelName: string;
-  temperature: number;
-  maxTokens: number;
-  contextWindowSize: number;
-  enableChatHistory: boolean;
-  fileUploadLimit: number;
-  supportedFileTypes: string[];
-}
-
-const DEFAULT_SETTINGS: AISettings = {
+const DEFAULT_SETTINGS: AIChatSettings = {
   apiKey: '',
   modelName: 'gpt-4',
-  temperature: 0.7,
-  maxTokens: 2048,
-  contextWindowSize: 4096,
+  modelParameters: {
+    temperature: 0.7,
+    maxTokens: 2048,
+    topP: 1
+  },
+  chatFontSize: '14px',
+  chatColorScheme: 'light',
+  chatLayout: 'default',
   enableChatHistory: true,
+  defaultPrompt: '',
+  contextWindowSize: 4096,
+  saveChatHistory: true,
+  loadChatHistory: true,
+  searchChatHistory: true,
+  deleteMessageFromHistory: true,
+  clearChatHistory: true,
+  exportChatHistory: true,
   fileUploadLimit: 10,
-  supportedFileTypes: ['.txt', '.md', '.pdf', '.csv']
+  supportedFileTypes: ['.txt', '.md', '.pdf', '.csv'],
+  contextIntegrationMethod: 'full',
+  maxContextSize: 4096,
+  useSemanticSearch: true,
+  theme: 'light'
 };
 
-const SettingsBox: React.FC = () => {
-  const app = useApp();
-  const [settings, setSettings] = useState<AISettings>(DEFAULT_SETTINGS);
+const SettingsBox: React.FC<SettingsBoxProps> = ({ plugin, onSettingsChange }) => {
+  const [settings, setSettings] = useState<AIChatSettings>(DEFAULT_SETTINGS);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      const savedSettings = await app.loadData('ai-chat-settings');
-      if (savedSettings) {
-        setSettings({ ...DEFAULT_SETTINGS, ...savedSettings });
-      }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-      new Notice('Error loading settings');
-    }
-  };
 
   const saveSettings = async () => {
     setIsSaving(true);
     try {
-      await app.saveData('ai-chat-settings', settings);
+      await onSettingsChange(settings);
       new Notice('Settings saved successfully');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -64,9 +53,9 @@ const SettingsBox: React.FC = () => {
     }
   };
 
-  const updateSetting = <K extends keyof AISettings>(
+  const updateSetting = <K extends keyof AIChatSettings>(
     key: K,
-    value: AISettings[K]
+    value: AIChatSettings[K]
   ) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
@@ -84,7 +73,7 @@ const SettingsBox: React.FC = () => {
             id="apiKey"
             type="password"
             value={settings.apiKey}
-            onChange={e => updateSetting('apiKey', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSetting('apiKey', e.target.value)}
             placeholder="Enter your API key"
           />
         </div>
@@ -94,20 +83,23 @@ const SettingsBox: React.FC = () => {
           <Input
             id="modelName"
             value={settings.modelName}
-            onChange={e => updateSetting('modelName', e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSetting('modelName', e.target.value)}
             placeholder="gpt-4"
           />
         </div>
 
         {/* Model Parameters */}
         <div className="space-y-2">
-          <Label>Temperature: {settings.temperature}</Label>
+          <Label>Temperature: {settings.modelParameters.temperature}</Label>
           <Slider
-            value={[settings.temperature]}
+            value={[settings.modelParameters.temperature]}
             min={0}
             max={1}
             step={0.1}
-            onValueChange={([value]) => updateSetting('temperature', value)}
+            onValueChange={([value]: number[]) => updateSetting('modelParameters', {
+              ...settings.modelParameters,
+              temperature: value
+            })}
           />
         </div>
 
@@ -116,8 +108,11 @@ const SettingsBox: React.FC = () => {
           <Input
             id="maxTokens"
             type="number"
-            value={settings.maxTokens}
-            onChange={e => updateSetting('maxTokens', Number(e.target.value))}
+            value={settings.modelParameters.maxTokens}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSetting('modelParameters', {
+              ...settings.modelParameters,
+              maxTokens: Number(e.target.value)
+            })}
             min={1}
             max={8192}
           />
@@ -129,7 +124,7 @@ const SettingsBox: React.FC = () => {
             id="contextWindowSize"
             type="number"
             value={settings.contextWindowSize}
-            onChange={e => updateSetting('contextWindowSize', Number(e.target.value))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSetting('contextWindowSize', Number(e.target.value))}
             min={1}
             max={8192}
           />
@@ -141,7 +136,7 @@ const SettingsBox: React.FC = () => {
           <Switch
             id="enableChatHistory"
             checked={settings.enableChatHistory}
-            onCheckedChange={checked => updateSetting('enableChatHistory', checked)}
+            onCheckedChange={(checked: boolean) => updateSetting('enableChatHistory', checked)}
           />
         </div>
 
@@ -152,7 +147,7 @@ const SettingsBox: React.FC = () => {
             id="fileUploadLimit"
             type="number"
             value={settings.fileUploadLimit}
-            onChange={e => updateSetting('fileUploadLimit', Number(e.target.value))}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSetting('fileUploadLimit', Number(e.target.value))}
             min={1}
             max={50}
           />
@@ -163,8 +158,8 @@ const SettingsBox: React.FC = () => {
           <Input
             id="supportedFileTypes"
             value={settings.supportedFileTypes.join(', ')}
-            onChange={e => updateSetting('supportedFileTypes', 
-              e.target.value.split(',').map(t => t.trim())
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSetting('supportedFileTypes',
+              e.target.value.split(',').map((t: string) => t.trim())
             )}
             placeholder=".txt, .md, .pdf"
           />

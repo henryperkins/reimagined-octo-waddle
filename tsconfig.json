@@ -14,6 +14,7 @@
     "allowSyntheticDefaultImports": true,
     "jsx": "react",
     "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "lib": [
       "DOM",
       "ES5",
@@ -21,7 +22,7 @@
       "ES7"
     ],
     "paths": {
-      "@/*": ["src/*"]
+      "*": ["./src/*"]
     }
   },
   "include": [
