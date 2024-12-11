@@ -1,14 +1,4 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-  DialogFooter
-} from "@/components/ui/dialog";
 import { Button } from './Button';
 import { X } from 'lucide-react';
 
@@ -36,35 +26,22 @@ const Modal: React.FC<ModalProps> = ({
   closeOnClickOutside = true,
 }) => {
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent
-        onPointerDownOutside={(e) => {
-          if (!closeOnClickOutside) {
-            e.preventDefault();
-          }
-        }}
-        className="sm:max-w-[425px]"
-      >
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <DialogDescription>{description}</DialogDescription>
+    <div className={`modal ${isOpen ? 'open' : ''}`} onClick={() => onOpenChange && onOpenChange(false)}>
+      {trigger && <div className="modal-trigger">{trigger}</div>}
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{title}</h2>
+          {description && <p>{description}</p>}
+          {showCloseButton && (
+            <button className="close-button" onClick={() => onOpenChange && onOpenChange(false)}>
+              <X className="h-4 w-4" />
+            </button>
           )}
-        </DialogHeader>
-
-        {showCloseButton && (
-          <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogClose>
-        )}
-
-        <div className="py-4">{children}</div>
-
-        {footer && <DialogFooter>{footer}</DialogFooter>}
-      </DialogContent>
-    </Dialog>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
   );
 };
 
@@ -95,6 +72,7 @@ export const ConfirmModal: React.FC<{
       trigger={trigger}
       title={title}
       description={description}
+      children={<></>}
       footer={
         <div className="flex justify-end gap-2">
           <Button

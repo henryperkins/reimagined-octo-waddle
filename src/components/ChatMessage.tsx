@@ -1,23 +1,20 @@
 import React from 'react';
-import { Card } from '@/components/ui/card';
-import { Message } from '@/types';
+import { Card } from 'components/ui/card';
+import { ChatMessage as ChatMessageType } from 'types';
+import { Button } from 'components/ui/button';
+import { Copy, Edit, Trash2, ExternalLink } from 'lucide-react';
+import { ConfirmModal } from 'components/Modal';
 
 interface ChatMessageProps {
-  message: Message;
+  message: ChatMessageType;
+  onDelete?: () => void;
+  onEdit?: (newContent: string) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
-  return (
-    <Card>
-      <div className="message-content">
-        {message.content}
-      </div>
-    </Card>
-  );
-};
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onEdit, onDelete }) => {
+  const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(content);
-      // Could use Obsidian's Notice here if we had access to the app
+      await navigator.clipboard.writeText(message.content);
       console.log('Copied to clipboard');
     } catch (error) {
       console.error('Failed to copy:', error);
@@ -26,14 +23,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 
   const handleEdit = async () => {
     if (!onEdit) return;
-    const newContent = prompt('Edit message:', content);
-    if (newContent && newContent !== content) {
+    const newContent = prompt('Edit message:', message.content);
+    if (newContent && newContent !== message.content) {
       await onEdit(newContent);
     }
   };
 
   const getMessageStyle = () => {
-    switch (role) {
+    switch (message.role) {
       case 'user':
         return 'bg-primary/10';
       case 'assistant':
@@ -51,25 +48,25 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         <div className="flex items-start justify-between">
           <div className="flex-grow">
             <div className="prose dark:prose-invert max-w-none">
-              {content.split('\n').map((line, i) => (
+              {message.content.split('\n').map((line: string, i: number) => (
                 <p key={i} className="mb-1">{line}</p>
               ))}
             </div>
             <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="capitalize">{role}</span>
+              <span className="capitalize">{message.role}</span>
               <span></span>
-              <span>{new Date(timestamp).toLocaleString()}</span>
-              {metadata?.tokenCount && (
+              <span>{new Date(message.timestamp).toLocaleString()}</span>
+              {message.metadata?.tokenCount && (
                 <>
                   <span></span>
-                  <span>{metadata.tokenCount} tokens</span>
+                  <span>{message.metadata.tokenCount} tokens</span>
                 </>
               )}
             </div>
-            {metadata?.sourceFile && (
+            {message.metadata?.sourceFile && (
               <div className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
                 <ExternalLink className="w-3 h-3" />
-                <span>{metadata.sourceFile}</span>
+                <span>{message.metadata.sourceFile}</span>
               </div>
             )}
           </div>
@@ -83,7 +80,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             >
               <Copy className="h-4 w-4" />
             </Button>
-            {role === 'user' && onEdit && (
+            {message.role === 'user' && onEdit && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -115,7 +112,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
     </Card>
   );
-});
+};
 
 ChatMessage.displayName = 'ChatMessage';
 

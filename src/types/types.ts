@@ -1,4 +1,4 @@
-import { Plugin, TFile, WorkspaceLeaf, ItemView, StatusBarItem } from 'obsidian';
+import { Plugin, TFile, WorkspaceLeaf, ItemView } from 'obsidian';
 
 // Plugin Settings
 export interface ModelParameters {
@@ -98,7 +98,7 @@ export interface AIChatPlugin extends Plugin {
   settings: AIChatSettings;
   conversations: { [key: string]: Conversation };
   currentConversationId: string;
-  statusBarItem: StatusBarItem;
+  statusBarItem: HTMLElement; // Updated type
   tokenCount: number;
 
   // Settings Management

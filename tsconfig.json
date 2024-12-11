@@ -27,7 +27,8 @@
       "@utils/*": ["src/utils/*"],
       "@types/*": ["src/types/*"],
       "@lib/*": ["src/lib/*"]
-    }
+    },
+    "types": ["obsidian"]
   },
   "include": [
     "**/*.ts",
