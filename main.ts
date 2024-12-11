@@ -1,5 +1,5 @@
-import { Plugin, Notice, addIcon, TFile, WorkspaceLeaf, App, PluginSettingTab } from 'obsidian';
-import { ChatView } from './src/components/ChatView';
+import { Plugin, Notice, addIcon, TFile, WorkspaceLeaf, App, PluginSettingTab, ItemView } from 'obsidian';
+import { ChatView, ChatViewProps } from './src/components/ChatView';
 import SettingsBox from './src/components/SettingsBox';
 import {
   AIChatSettings,
@@ -71,6 +71,39 @@ export class AIChatSettingsTab extends PluginSettingTab {
   }
 }
 
+class AIChatView extends ItemView {
+  plugin: AIChatPlugin;
+
+  constructor(leaf: WorkspaceLeaf, plugin: AIChatPlugin) {
+    super(leaf);
+    this.plugin = plugin;
+  }
+
+  getViewType(): string {
+    return VIEW_TYPE_AI_CHAT;
+  }
+
+  getDisplayText(): string {
+    return "AI Chat";
+  }
+
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    const chatView = React.createElement(ChatView, {
+      plugin: this.plugin,
+      onSearchOpen: () => {
+        console.log('Search opened');
+      }
+    });
+    const root = ReactDOM.createRoot(container);
+    root.render(chatView);
+  }
+
+  async onClose() {
+    // Cleanup if necessary
+  }
+}
+
 export default class AIChatPlugin extends Plugin implements AIChatPluginInterface {
   settings: AIChatSettings = DEFAULT_SETTINGS;
   conversations: { [key: string]: Conversation } = {};
@@ -121,16 +154,7 @@ export default class AIChatPlugin extends Plugin implements AIChatPluginInterfac
     // Register view
     this.registerView(
       VIEW_TYPE_AI_CHAT,
-      (leaf) => {
-        const view = new ChatView({
-          plugin: this,
-          onSearchOpen: () => {
-            // Handle search open
-            console.log('Search opened');
-          }
-        });
-        return view;
-      }
+      (leaf) => new AIChatView(leaf, this)
     );
 
     // Add ribbon icon

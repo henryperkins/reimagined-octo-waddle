@@ -3,7 +3,7 @@ import { Button } from '../components/Button';
 import { Upload } from 'lucide-react';
 // import { useObsidian } from '../ui';
 
-interface FileUploadProps {
+export interface FileUploadProps { // Exported the interface
   onFileSelect: (file: File) => Promise<void>;
   accept?: string;
   maxSize?: number; // in MB

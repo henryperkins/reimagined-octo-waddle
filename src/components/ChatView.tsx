@@ -10,7 +10,7 @@ import {
 } from './';
 import type { ChatMessage as ChatMessageType } from '../types';
 
-interface ChatViewProps {
+export interface ChatViewProps {  // Added export here
     plugin: AIChatPlugin;
     onSearchOpen: () => void;
 }

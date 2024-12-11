@@ -4,7 +4,9 @@ import FileUpload, { FileUploadWithLoading } from './FileUpload';
 import { Button } from '../components/Button';
 import { Modal, ConfirmModal } from '../components/Modal';
 import { TextArea } from '../components/TextArea';
-import { SettingsBox } from './SettingsBox';
+import SettingsBox from './SettingsBox'; // Updated to default import
+import { Input } from './Input';
+import { Card, CardHeader, CardContent } from './Card';
 
 export {
   ChatInterface,
@@ -16,6 +18,10 @@ export {
   ConfirmModal,
   TextArea,
   SettingsBox,
+  Input,
+  Card,
+  CardHeader,
+  CardContent,
 };
 
 // Re-export types
@@ -25,4 +31,4 @@ export type { FileUploadProps } from './FileUpload';
 export type { ButtonProps } from '../components/Button';
 export type { ModalProps } from '../components/Modal';
 export type { TextAreaProps } from '../components/TextArea';
-export type { SettingsBoxProps } from './SettingsBox';
+export type { SettingsBoxProps } from '../types'; // Corrected import path

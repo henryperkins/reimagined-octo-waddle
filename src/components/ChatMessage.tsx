@@ -5,7 +5,7 @@ import { Button } from 'components/ui/button';
 import { Copy, Edit, Trash2, ExternalLink } from 'lucide-react';
 import { ConfirmModal } from 'components/Modal';
 
-interface ChatMessageProps {
+export interface ChatMessageProps { // Exported the interface
   message: ChatMessageType;
   onDelete?: () => void;
   onEdit?: (newContent: string) => void;

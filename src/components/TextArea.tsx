@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { cn } from "@/lib/utils";
+import { cn } from '@lib/utils';
 
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   autoResize?: boolean;
@@ -79,8 +79,7 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(({
           className={cn(
             "mt-1 text-sm",
             error ? "text-destructive" : "text-muted-foreground"
-          )}
-        >
+          )}>
           {helperText}
         </p>
       )}

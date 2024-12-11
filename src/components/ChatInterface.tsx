@@ -10,7 +10,7 @@ import FileUpload from './FileUpload';
 import SettingsBox from './SettingsBox';
 import type { AIChatPluginInterface as AIChatPlugin, ChatMessage as ChatMessageType } from '../types';
 
-interface ChatInterfaceProps {
+export interface ChatInterfaceProps { // Exported the interface
   plugin: AIChatPlugin;
   onSendMessage: (message: string) => Promise<void>;
   onFileUpload: (file: File) => Promise<void>;
