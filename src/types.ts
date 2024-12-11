@@ -89,3 +89,36 @@ export interface SettingsBoxProps {
   plugin: AIChatPluginInterface;
   onSettingsChange: (settings: AIChatSettings) => Promise<void>;
 }
+
+export interface ViewState {
+  type: string;
+  active: boolean;
+  state?: any;
+}
+
+export interface FileMetadata {
+  name: string;
+  type: string;
+  size: number;
+  createdAt: Date;
+  modifiedAt: Date;
+  path: string;
+  tags?: string[];
+}
+
+export interface FileUploadResult {
+  success: boolean;
+  message: string;
+  filePath?: string;
+  error?: Error;
+}
+
+export interface AIResponse {
+  content: string;
+  tokensUsed: number;
+  metadata?: {
+    model: string;
+    completionTokens: number;
+    promptTokens: number;
+  };
+}
