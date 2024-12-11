@@ -35,3 +35,4 @@ coverage/
 *.log
 *.tmp
 .cache/
+.aider*
