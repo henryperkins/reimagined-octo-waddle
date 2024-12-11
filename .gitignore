@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependencies
 node_modules/
 
@@ -36,3 +37,43 @@ coverage/
 *.tmp
 .cache/
 .aider*
+=======
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+main.js
+*.js.map
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Plugin-specific
+data.json
+uploads/
+chat-history/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.log
+*.tmp
+.cache/
+.aider*
+>>>>>>> 6a7043a5ccbc622de2f1bf4502417cb87c74a39d

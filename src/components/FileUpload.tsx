@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Button } from '../components/Button';
 import { Upload } from 'lucide-react';
-import { useObsidian } from '../ui';
+// import { useObsidian } from '../ui';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => Promise<void>;
@@ -15,7 +15,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxSize = 10
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const app = useObsidian();
+  const app = { showNotice: (message: string) => alert(message) }; // Temporary replacement for useObsidian
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -29,7 +29,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     try {
       await onFileSelect(file);
-      
+
       // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -52,6 +52,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         accept={accept}
         onChange={handleFileChange}
         className="hidden"
+        title="Upload file"
       />
       <Button
         variant="outline"

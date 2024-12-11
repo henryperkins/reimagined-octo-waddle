@@ -1,35 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import AIChatPlugin from '../main';
-
-export interface ModelParameters {
-  temperature: number;
-  maxTokens: number;
-  topP: number;
-}
-
-export interface AIChatSettings {
-  apiKey: string;
-  modelName: string;
-  modelParameters: ModelParameters;
-  chatFontSize: string;
-  chatColorScheme: string;
-  chatLayout: string;
-  enableChatHistory: boolean;
-  defaultPrompt: string;
-  contextWindowSize: number;
-  saveChatHistory: boolean;
-  loadChatHistory: boolean;
-  searchChatHistory: boolean;
-  deleteMessageFromHistory: boolean;
-  clearChatHistory: boolean;
-  exportChatHistory: boolean;
-  fileUploadLimit: number;
-  supportedFileTypes: string[];
-  contextIntegrationMethod: 'full' | 'summary';
-  maxContextSize: number;
-  useSemanticSearch: boolean;
-  theme: 'light' | 'dark';
-}
+import type { AIChatPluginInterface, AIChatSettings } from '@/types';
 
 export const DEFAULT_SETTINGS: AIChatSettings = {
   apiKey: '',
@@ -51,7 +21,7 @@ export const DEFAULT_SETTINGS: AIChatSettings = {
   deleteMessageFromHistory: true,
   clearChatHistory: true,
   exportChatHistory: true,
-  fileUploadLimit: 10, // MB
+  fileUploadLimit: 10,
   supportedFileTypes: ['.txt', '.md', '.pdf', '.jpg', '.png', '.py', '.js'],
   contextIntegrationMethod: 'summary',
   maxContextSize: 4096,
@@ -60,9 +30,9 @@ export const DEFAULT_SETTINGS: AIChatSettings = {
 };
 
 export class AIChatSettingsTab extends PluginSettingTab {
-  plugin: AIChatPlugin;
+  plugin: AIChatPluginInterface;
 
-  constructor(app: App, plugin: AIChatPlugin) {
+  constructor(app: App, plugin: AIChatPluginInterface) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -287,8 +257,8 @@ export class AIChatSettingsTab extends PluginSettingTab {
         .addOption('full', 'Full Content')
         .addOption('summary', 'Summary')
         .setValue(this.plugin.settings.contextIntegrationMethod)
-        .onChange(async (value: 'full' | 'summary') => {
-          this.plugin.settings.contextIntegrationMethod = value;
+        .onChange(async (value: string) => {
+          this.plugin.settings.contextIntegrationMethod = value as 'full' | 'summary';
           await this.plugin.saveSettings();
         })
       );

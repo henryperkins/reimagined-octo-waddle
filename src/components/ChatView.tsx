@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+<<<<<<< HEAD
 import type AIChatPlugin from '../../main';
 import { 
     Button, 
@@ -9,6 +10,13 @@ import {
     ChatMessage 
 } from './';
 import type { ChatMessage as ChatMessageType } from '../types';
+=======
+import ChatMessage from './ChatMessage';
+import { Button } from './Button';
+import { Input } from './Input';
+import { Card, CardHeader, CardContent } from './Card';
+import type { AIChatPluginInterface as AIChatPlugin, ChatMessage as ChatMessageType } from '../types';
+>>>>>>> 6a7043a5ccbc622de2f1bf4502417cb87c74a39d
 
 interface ChatViewProps {
     plugin: AIChatPlugin;
@@ -46,7 +54,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
 
             await plugin.addMessage(newMessage);
             setMessage('');
-            
+
             // Get AI response
             const response = await plugin.getAIResponse(message);
             await plugin.addMessage({
@@ -121,12 +129,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
                 </div>
             </CardHeader>
             <CardContent className="chat-messages">
-                {conversation?.messages.map((msg) => (
+                {conversation?.messages.map((msg: ChatMessageType) => (
                     <ChatMessage
                         key={msg.id}
                         message={msg}
                         onDelete={
-                            msg.role === 'user' 
+                            msg.role === 'user'
                                 ? () => plugin.deleteMessage(msg.id)
                                 : undefined
                         }
@@ -149,7 +157,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
                     <Input
                         type="text"
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Type your message..."
                         disabled={isLoading}
@@ -165,7 +173,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ plugin, onSearchOpen }) => {
                             onChange={handleFileUpload}
                             accept={plugin.settings.supportedFileTypes.join(',')}
                             disabled={isLoading}
-                            style={{ display: 'none' }}
+                            className="hidden-file-input"
                         />
                         📎
                     </label>

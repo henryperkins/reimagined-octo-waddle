@@ -13,6 +13,8 @@
     "strictNullChecks": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "react",
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
     "lib": [
       "DOM",
       "ES5",
@@ -20,11 +22,15 @@
       "ES7"
     ],
     "paths": {
+<<<<<<< HEAD
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@utils/*": ["src/utils/*"],
       "@types/*": ["src/types/*"],
       "@lib/*": ["src/lib/*"]
+=======
+      "*": ["./src/*"]
+>>>>>>> 6a7043a5ccbc622de2f1bf4502417cb87c74a39d
     }
   },
   "include": [

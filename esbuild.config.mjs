@@ -1,6 +1,12 @@
+import path from "path";
+import { fileURLToPath } from "url";
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import alias from "esbuild-plugin-alias";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const banner =
 `/*
@@ -38,6 +44,17 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
+	plugins: [
+		{
+			name: 'alias',
+			setup(build) {
+				build.onResolve({ filter: /^@\// }, args => {
+					const resolvedPath = path.resolve(__dirname, 'src', args.path.replace('@/', ''));
+					return { path: resolvedPath };
+				});
+			}
+		}
+	]
 });
 
 if (prod) {

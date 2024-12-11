@@ -1,5 +1,11 @@
 import { Notice, TFile, normalizePath } from 'obsidian';
-import { AIChatPlugin } from '../types';
+
+declare global {
+  interface Window {
+    pdfjsLib: any;
+    Tesseract: any;
+  }
+}
 
 export class FileProcessingError extends Error {
   constructor(
@@ -34,6 +40,13 @@ class PDFFileProcessor implements FileProcessor {
 
   async process(file: File): Promise<string> {
     try {
+      if (!window.pdfjsLib) {
+        throw new FileProcessingError(
+          'PDF.js library not loaded',
+          'PDF_LIB_NOT_LOADED'
+        );
+      }
+
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       
@@ -41,7 +54,7 @@ class PDFFileProcessor implements FileProcessor {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        text += content.items.map((item: any) => item.str).join(' ') + '\n';
+        text += content.items.map((item: { str: string }) => item.str).join(' ') + '\n';
       }
       
       return text;
@@ -63,10 +76,17 @@ class ImageFileProcessor implements FileProcessor {
 
   async process(file: File): Promise<string> {
     try {
-      const result = await Tesseract.recognize(
+      if (!window.Tesseract) {
+        throw new FileProcessingError(
+          'Tesseract library not loaded',
+          'TESSERACT_NOT_LOADED'
+        );
+      }
+
+      const result = await window.Tesseract.recognize(
         file,
         'eng',
-        { logger: m => console.log(m) }
+        { logger: (m: unknown) => console.log(m) }
       );
       return result.data.text;
     } catch (error) {
@@ -121,81 +141,4 @@ export class FileProcessingService {
     }
     return await processor.process(file);
   }
-}
-
-export async function handleFileUpload(
-  plugin: AIChatPlugin,
-  file: File
-): Promise<string> {
-  try {
-    // Validate file
-    if (!plugin.settings.supportedFileTypes.includes(`.${file.name.split('.').pop()}`)) {
-      throw new FileProcessingError(
-        'Unsupported file type',
-        'UNSUPPORTED_FILE_TYPE'
-      );
-    }
-
-    if (file.size > plugin.settings.fileUploadLimit * 1024 * 1024) {
-      throw new FileProcessingError(
-        'File size exceeds limit',
-        'FILE_SIZE_LIMIT'
-      );
-    }
-
-    // Save file to vault
-    const filePath = await saveFileToVault(plugin, file);
-    
-    // Process file content
-    const service = new FileProcessingService();
-    const content = await service.processFile(file);
-
-    // Add to context if needed
-    if (content.trim()) {
-      await addToContext(plugin, content);
-    }
-
-    return `File ${file.name} uploaded and processed successfully.`;
-  } catch (error) {
-    if (error instanceof FileProcessingError) {
-      new Notice(error.message);
-      return `Error: ${error.message}`;
-    }
-    console.error('Error handling file upload:', error);
-    new Notice('An unexpected error occurred while processing the file');
-    return 'An error occurred while processing your file. Please try again.';
-  }
-}
-
-async function saveFileToVault(
-  plugin: AIChatPlugin,
-  file: File
-): Promise<string> {
-  const filePath = normalizePath(`uploads/${file.name}`);
-  const content = await file.text();
-
-  const existingFile = plugin.app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof TFile) {
-    await plugin.app.vault.modify(existingFile, content);
-  } else {
-    await plugin.app.vault.create(filePath, content);
-  }
-
-  return filePath;
-}
-
-async function addToContext(
-  plugin: AIChatPlugin,
-  content: string
-): Promise<void> {
-  const summary = plugin.settings.contextIntegrationMethod === 'summary' 
-    ? await plugin.summarizeText(content)
-    : content;
-
-  if (!plugin.chatHistory[plugin.currentConversation]) {
-    plugin.chatHistory[plugin.currentConversation] = [];
-  }
-
-  plugin.chatHistory[plugin.currentConversation].push(`Context: ${summary}`);
-  plugin.limitChatHistorySize();
 }

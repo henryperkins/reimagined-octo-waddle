@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '../components/Button';
-import { TextArea } from '../components/TextArea';
-import { Modal, ConfirmModal } from '../components/Modal';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent } from './ui/card';
+import { Button } from './Button';
+import { TextArea } from './TextArea';
+import { Modal, ConfirmModal } from './Modal';
+import { ScrollArea } from './ui/scroll-area';
 import { Send, Upload, Settings, Trash, Download } from 'lucide-react';
-import { ChatMessage } from './ChatMessage';
-import { FileUpload } from './FileUpload';
-import { SettingsBox } from './SettingsBox';
-import { AIChatPlugin } from '../types';
+import ChatMessage from './ChatMessage';
+import FileUpload from './FileUpload';
+import SettingsBox from './SettingsBox';
+import type { AIChatPluginInterface as AIChatPlugin, ChatMessage as ChatMessageType } from '../types';
 
 interface ChatInterfaceProps {
   plugin: AIChatPlugin;
@@ -101,11 +101,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </div>
 
-      <ScrollArea 
+      <ScrollArea
         ref={scrollRef}
         className="flex-grow p-4"
       >
-        {conversation?.messages.map((msg) => (
+        {conversation?.messages.map((msg: ChatMessageType) => (
           <ChatMessage
             key={msg.id}
             message={msg}
